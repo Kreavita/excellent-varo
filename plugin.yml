@@ -1,0 +1,22 @@
+name: ExcellentVARO
+author: Kreavita
+version: 1.0
+description: Excellent VARO Plugin for Excellent Students
+main: net.kreaverse.ExcellentVARO
+api-version: 1.18
+commands:
+ start:
+  description: start the game
+  usage: /start
+ reset:
+  description: reset the game
+  usage: /reset
+ stats:
+  description: show the statistics of a player
+  usage: /stats <player>
+ team:
+  description: send a team request to a player
+  usage: /team <player>  
+ teamaccept:
+  description: accept a players team request
+  usage: /teamaccept <player>
