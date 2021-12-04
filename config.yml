@@ -1,1 +1,10 @@
-defaultBorder: 1000
+game:
+  state: 0
+  borderSize: 1000
+  borderMinSize: 100
+  borderShrinkTime: 600
+  
+defaults:
+  defaultBorder: 1000
+
+players:

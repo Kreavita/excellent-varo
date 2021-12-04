@@ -6,17 +6,26 @@ main: net.kreaverse.ExcellentVARO
 api-version: 1.18
 commands:
  start:
-  description: start the game
-  usage: /start
+  description: start the game. You can change the countdown, the default countdown is 0.
+  usage: /start [<Countdown>]
  reset:
   description: reset the game
   usage: /reset
+ varokill:
+  description: remove a player from the game
+  usage: /varokill <player>
+ varorevive:
+  description: remove a player from the game
+  usage: /varorevive <player>
  stats:
   description: show the statistics of a player
   usage: /stats <player>
  team:
-  description: send a team request to a player
-  usage: /team <player>  
- teamaccept:
-  description: accept a players team request
-  usage: /teamaccept <player>
+  description: send a team request to a player or accepts it
+  usage: /team <player>
+ unteam:
+  description: disbands your current team
+  usage: /unteam
+ pause:
+  description: vote for a pause, 15 minutes by default
+  usage: /pause [<minutes>]
