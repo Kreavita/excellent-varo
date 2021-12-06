@@ -1,5 +1,6 @@
 package net.kreaverse.model;
 
+import java.time.Duration;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -11,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
+import net.kyori.adventure.title.Title.Times;
 
 public class VaroMessenger {
 
@@ -26,6 +28,18 @@ public class VaroMessenger {
 		if (p == null)
 			return;
 		p.showTitle(Title.title(Component.text(topC + top), Component.text(bottomC + bottom)));
+	}
+
+	public void pauseTitle(Player p, int minutes) {
+		if (p == null)
+			return;
+		p.showTitle(Title.title(Component.text(ChatColor.GOLD + "Spiel pausiert"),
+				Component.text(ChatColor.YELLOW + "Das Spiel wird in " + minutes + " Minuten fortgesetzt."),
+				Times.of(Duration.ZERO, Duration.ofMinutes(minutes), Duration.ZERO)));
+	}
+
+	public void resumeTitle(Player p) {
+		playerTitle(p, "Spiel fortgesetzt", ChatColor.GREEN, "Das Spiel geht weiter!", ChatColor.AQUA);
 	}
 
 	public void playerMessage(Player p, String message, ChatColor color) {

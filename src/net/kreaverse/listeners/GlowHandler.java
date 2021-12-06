@@ -1,9 +1,7 @@
 package net.kreaverse.listeners;
 
 import java.util.List;
-import java.util.logging.Level;
 
-import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -37,15 +35,12 @@ public class GlowHandler {
 		initPacketListener();
 	}
 
-	public void sendUpdatePackets(Player target) { // trigger the glow listener by resending the last metadata packet
-		Bukkit.getServer().getOnlinePlayers().forEach((player) -> {
+	public void initiateTeamGlow(Player target, Player receiver) { // trigger the glow listener by resending the last metadata packet
+		PacketPlayOutEntityMetadata metadataPacket = new PacketPlayOutEntityMetadata(target.getEntityId(),
+				((CraftPlayer) target).getHandle().ai(), true); // deobf: getDataWatcher()
 
-			PacketPlayOutEntityMetadata metadataPacket = new PacketPlayOutEntityMetadata(player.getEntityId(),
-					((CraftPlayer) player).getHandle().ai(), true); // deobf: getDataWatcher()
-
-			((CraftPlayer) target).getHandle().b.a(metadataPacket); // deobf:
+		((CraftPlayer) receiver).getHandle().b.a(metadataPacket); // deobf:
 																	// playerConnection.sendPacket(metadataPacket)
-		});
 	}
 
 	private void initPacketListener() {

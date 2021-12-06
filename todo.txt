@@ -1,7 +1,15 @@
 DONE AttacksMissed, ShotsMissed nur tracken wenn in Combat
-DONE Team Commands
+DONE Team Commands => Zweierteams
 DONE Team Glow Testen
 DONE tränke restoren fixen
 DONE init state spawnt alle am spawn
+DONE kein End
+DONE Leaven nur nach 30s ohne damage
+DONE Keine Advancements broadcasten, Mob Spawn mit gamerule
+DONE Revive Mechanic mit OP Apfel / Wither Skull
+DONE XP Drop & XP reset fixen
 unterwasser bubbles fixen
-spectator mode verbessern
+spectator mode: wenn der alive teammate stirbt -> leaven
+immersive spectator mode
+Replay Mod Einrichten
+Anticheat?

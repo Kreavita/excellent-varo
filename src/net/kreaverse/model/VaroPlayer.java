@@ -7,15 +7,20 @@ public class VaroPlayer {
 
 	public UUID player;
 	private UUID teammate;
+
 	public boolean alive;
+	public int revivesLeft;
 
 	public HashMap<String, Double> stats;
+
 	public UUID lastAttacker;
 	public int attackedCooldown;
 
-	public VaroPlayer(UUID p) {
+	public VaroPlayer(UUID p, int playerRevives) {
 		player = p;
+
 		alive = true;
+		revivesLeft = playerRevives;
 
 		lastAttacker = null;
 		attackedCooldown = 0;
@@ -31,10 +36,11 @@ public class VaroPlayer {
 		stats.put("shotsMissed", 0d);
 	}
 
-	public VaroPlayer(UUID p, UUID teammate, boolean alive, HashMap<String, Double> stats) {
-		this(p);
+	public VaroPlayer(UUID p, UUID teammate, boolean alive, int revivesLeft, HashMap<String, Double> stats) {
+		this(p, revivesLeft);
 		this.teammate = teammate;
 		this.alive = alive;
+		this.revivesLeft = revivesLeft;
 		stats.forEach((key, value) -> incrementStat(key, value));
 	}
 

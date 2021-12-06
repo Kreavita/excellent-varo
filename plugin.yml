@@ -1,34 +1,55 @@
 name: ExcellentVARO
 author: Kreavita
 version: 1.0
-description: Excellent VARO Plugin for Excellent Students
+description: An Excellent VARO Plugin for Excellent Students
 main: net.kreaverse.ExcellentVARO
 api-version: 1.18
 commands:
- start:
-  description: start the game. You can change the countdown, the default countdown is 0.
-  usage: /start [<Countdown>]
- reset:
-  description: reset the game
-  usage: /reset
- varokill:
-  description: remove a player from the game
-  usage: /varokill <player>
- varorevive:
-  description: remove a player from the game
-  usage: /varorevive <player>
- stats:
-  description: show the statistics of a player
-  usage: /stats <player>
  team:
+  aliases: [friend, teamrequest, teamaccept]
   description: send a team request to a player or accepts it
   usage: /team <player>
  unteam:
+  aliases: [unfriend, leaveteam, teamremove]
   description: disbands your current team
   usage: /unteam
  pause:
   description: pause the game, 2 minutes by default
   usage: /pause [<minutes>]
  unpause:
+  aliases: [resume]
   description: unpause the game, with a delay of 5 seconds
   usage: /unpause
+ stats:
+  description: show the statistics of a player
+  usage: /stats <player>
+ start:
+  description: start the game. You can change the countdown, the default countdown is 0.
+  usage: /start [<Countdown>]
+  permission: varo.admin
+  permission-message: Du musst Administrator sein um diesen Befehl zu verwenden!
+ reset:
+  description: reset the game
+  usage: /reset
+  permission: varo.admin
+  permission-message: Du musst Administrator sein um diesen Befehl zu verwenden!
+ varokill:
+  description: remove a player from the game
+  usage: /varokill <player>
+  permission: varo.admin
+  permission-message: Du musst Administrator sein um diesen Befehl zu verwenden!
+ varorevive:
+  description: remove a player from the game
+  usage: /varorevive <player>
+  permission: varo.admin
+  permission-message: Du musst Administrator sein um diesen Befehl zu verwenden!
+ saveconfig:
+  description: saves the current config
+  usage: /saveconfig
+  permission: varo.admin
+  permission-message: Du musst Administrator sein um diesen Befehl zu verwenden!
+
+permissions:
+  varo.admin:
+   description: Manage the Excellent VARO game
+   default: op

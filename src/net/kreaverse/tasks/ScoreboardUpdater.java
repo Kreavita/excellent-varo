@@ -77,7 +77,7 @@ public class ScoreboardUpdater extends BukkitRunnable {
 				+ ((vp.alive) ? "§a§l" + Math.max(0, Math.round(p.getHealth() - pDamage) / 2f) + " HP" : "§c§lTOT"))
 				.setScore(79);
 		varo.getScore(" Kills: §2§l" + Math.round(vp.stats.get("kills"))).setScore(78);
-		varo.getScore(" Leben: §a§l" + 1).setScore(77);
+		varo.getScore(" Leben: §a§l" + vp.revivesLeft).setScore(77);
 		varo.getScore("  ").setScore(70);
 
 		if (tm != null) {
@@ -88,7 +88,7 @@ public class ScoreboardUpdater extends BukkitRunnable {
 				varo.getScore(" §l§u§g" + Bukkit.getOfflinePlayer(tm).getName() + ": "
 						+ ((vpTeammate.alive) ? "§a§l" + tmHealth : "§c§lTOT")).setScore(69);
 				varo.getScore(" Kills: §2§l" + Math.round(vpTeammate.stats.get("kills")) + " ").setScore(68);
-				varo.getScore(" Leben: §a§l" + 1 + " ").setScore(67);
+				varo.getScore(" Leben: §a§l" + vpTeammate.revivesLeft + " ").setScore(67);
 				varo.getScore(" ").setScore(60);
 			}
 		}

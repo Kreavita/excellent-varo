@@ -10,8 +10,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.GameRule;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.Statistic;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
@@ -19,9 +22,9 @@ import org.jetbrains.annotations.NotNull;
 import net.kreaverse.ExcellentVARO;
 import net.kreaverse.listeners.GlowHandler;
 import net.kreaverse.tasks.FightTracker;
+import net.kreaverse.tasks.GamePause;
 import net.kreaverse.tasks.ScoreboardUpdater;
 import net.kreaverse.tasks.StartCountdown;
-import net.kreaverse.tasks.UnpauseGame;
 
 public class VaroGame {
 
@@ -50,10 +53,9 @@ public class VaroGame {
 	public ArrayList<VaroPlayer> players;
 	public long aliveCount;
 
-	public int borderSize;
-	public int defaultBorderSize;
-	public int borderMinSize;
-	public int borderShrinkTime;
+	public float borderMinSize;
+	public float borderMaxSize;
+	public float borderShrinkTime;
 
 	public boolean paused = false;
 
@@ -61,7 +63,7 @@ public class VaroGame {
 
 	private ExcellentVARO plugin;
 	private VaroMessenger msg;
-	public GlowHandler pl;
+	public GlowHandler gh;
 
 	private HashMap<String, BukkitRunnable> timerThreads;
 	private ScoreboardUpdater scoreboardUpdater;
@@ -73,16 +75,24 @@ public class VaroGame {
 		scoreboardUpdater.runTaskTimer(plugin, 1L, 100L);
 
 		paused = false;
-		borderSize = plugin.getConfig().getInt("border.borderSize");
 
+		borderMaxSize = plugin.getConfig().getInt("defaults.borderMaxSize");
 		borderMinSize = plugin.getConfig().getInt("defaults.borderMinSize");
-		defaultBorderSize = plugin.getConfig().getInt("defaults.defaultBorder");
 		borderShrinkTime = plugin.getConfig().getInt("defaults.borderShrinkTime");
 
 		players = cfg.loadPlayers();
 		timerThreads = new HashMap<String, BukkitRunnable>();
 
-		pl = new GlowHandler(this, plugin);
+		gh = new GlowHandler(this, plugin);
+
+		int savedBorderSize = plugin.getConfig().getInt("game.borderSize");
+		Bukkit.getServer().getWorlds().forEach(world -> {
+			world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+			world.setGameRule(GameRule.PLAYERS_SLEEPING_PERCENTAGE, 50);
+			world.setGameRule(GameRule.UNIVERSAL_ANGER, false);
+			world.setGameRule(GameRule.SPECTATORS_GENERATE_CHUNKS, false);
+			world.getWorldBorder().setSize(savedBorderSize);
+		});
 
 		updateState(GameState.fromInt(plugin.getConfig().getInt("game.state")));
 	}
@@ -97,12 +107,15 @@ public class VaroGame {
 		case IDLE:
 			Bukkit.getServer().getWorlds().forEach(world -> {
 				world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+				world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+				world.setGameRule(GameRule.DO_FIRE_TICK, false);
 				world.setTime(0);
-				world.getWorldBorder().setSize(defaultBorderSize);
+				world.getWorldBorder().setSize(borderMaxSize);
 			});
 
 			players.forEach(vp -> {
 				vp.alive = true;
+				vp.revivesLeft = 1;
 				if (Bukkit.getPlayer(vp.player) != null) {
 					Player p = Bukkit.getPlayer(vp.player);
 					updatePlayer(p);
@@ -114,6 +127,8 @@ public class VaroGame {
 		case FINISHED:
 			Bukkit.getServer().getWorlds().forEach(world -> {
 				world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+				world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+				world.setGameRule(GameRule.DO_FIRE_TICK, false);
 				world.getWorldBorder().setSize(world.getWorldBorder().getSize());
 			});
 			break;
@@ -121,8 +136,10 @@ public class VaroGame {
 		case ONGOING:
 			Bukkit.getServer().getWorlds().forEach(world -> {
 				world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
-				world.getWorldBorder().setSize(borderMinSize, Math.round(
-						((float) ((defaultBorderSize - borderSize) * borderShrinkTime) / (float) defaultBorderSize)));
+				world.setGameRule(GameRule.DO_MOB_SPAWNING, true);
+				world.setGameRule(GameRule.DO_FIRE_TICK, true);
+				world.getWorldBorder().setSize(borderMinSize, Math
+						.round(borderShrinkTime * (world.getWorldBorder().getSize() - borderMinSize) / borderMaxSize));
 			});
 			initIngameThreads();
 			break;
@@ -140,12 +157,9 @@ public class VaroGame {
 			p.setGameMode(GameMode.ADVENTURE);
 			break;
 		case ONGOING:
-			playerClear(p);
 			VaroPlayer vp = getPlayerByUUID(p.identity().uuid());
 			if (!vp.alive) {
 				p.setGameMode(GameMode.SPECTATOR);
-				msg.playerMessage(p, "Falls du ein Teammate hast, wirst du in 10 Sekunden zu ihm teleportiert...",
-						ChatColor.GRAY);
 
 				if (timerThreads.get("forceSpectateTimer") != null
 						&& !timerThreads.get("forceSpectateTimer").isCancelled()) {
@@ -209,15 +223,15 @@ public class VaroGame {
 				plugin.getLogger().log(Level.INFO, "startCountdown couldn't be cancelled");
 			}
 		}
-		timerThreads.put("startCountdown", new StartCountdown(this, msg, countdown));
-		timerThreads.get("startCountdown").runTaskTimer(plugin, 1L, 20L);
+		timerThreads.put("startCountdown", new StartCountdown(plugin, msg, countdown));
 	}
 
 	public void pause(int duration, String name) {
 		if (paused)
 			return;
 
-		msg.broadcast(name + " hat das Spiel wird für " + duration + " Minuten pausiert!", ChatColor.YELLOW);
+		msg.broadcast(name + " hat das Spiel wird für " + duration
+				+ " Minuten pausiert! Benutze '/unpause' um die Pause abzubrechen", ChatColor.YELLOW);
 
 		if (timerThreads.get("pauseTimer") != null) {
 			try {
@@ -227,8 +241,7 @@ public class VaroGame {
 			}
 		}
 
-		timerThreads.put("pauseTimer", new UnpauseGame(this));
-		timerThreads.get("pauseTimer").runTaskLater(plugin, 1200L * duration);
+		timerThreads.put("pauseTimer", new GamePause(plugin, msg, duration));
 	}
 
 	public void resume(String name) {
@@ -293,27 +306,29 @@ public class VaroGame {
 		VaroPlayer vp = getPlayerByUUID(p.getUniqueId());
 
 		if (vp == null) {
-			vp = new VaroPlayer(p.getUniqueId());
+			vp = new VaroPlayer(p.getUniqueId(), plugin.getConfig().getInt("defaults.playerRevives"));
 			vp.alive = state == GameState.IDLE;
 			players.add(vp);
 		}
 
-		if (!vp.alive) {
-			msg.playerTitle(p, "Zuschauer", ChatColor.GRAY, "Das Spiel hat bereits begonnen oder du bist bereits tot",
-					ChatColor.LIGHT_PURPLE);
-		}
 		updatePlayer(p);
+
+		if (!vp.alive) {
+			msg.playerTitle(p, "Zuschauer", ChatColor.GRAY, "Das Spiel hat bereits begonnen oder du bist tot",
+					ChatColor.LIGHT_PURPLE);
+
+			if (vp.getTeammate() != null)
+				forceSpectate(p, getPlayerByUUID(vp.getTeammate()));
+		}
 		scoreboardUpdater.run();
 		return vp;
 	}
 
 	public void updateTeamGlow(Player p1, Player p2) {
-		if (p1 != null) {
-			pl.sendUpdatePackets(p1);
-		}
-		if (p2 != null) {
-			pl.sendUpdatePackets(p2);
-		}
+		if (p1 != null)
+			gh.initiateTeamGlow(p1, p2);
+		if (p2 != null)
+			gh.initiateTeamGlow(p2, p1);
 	}
 
 	public void playerHPChange(Player p, double damage) {
@@ -358,11 +373,21 @@ public class VaroGame {
 				p.getWorld().dropItem(p.getLocation(), item);
 		});
 
-		p.getInventory().clear();
+		int level = Math.min(p.getLevel(), 15);
+		float progress = p.getExp();
+		while (level > 0) {
+			ExperienceOrb e = (ExperienceOrb) p.getWorld().spawnEntity(new Location(p.getWorld(), 0, 0, 0),
+					EntityType.EXPERIENCE_ORB);
+			e.teleport(p.getLocation());
+			e.setExperience(Math.round((experienceToDrop(level, progress) - experienceToDrop(level - 1, 0)) / 2f));
+			level--;
+			progress = 0;
+		}
+		playerClear(p);
 
 		VaroPlayer vp = getPlayerByUUID(p.getUniqueId());
 
-		msg.playerTitle(p, "TOT", ChatColor.DARK_RED, "Du bist gestorben - hast aber gut gekämpft!", ChatColor.RED);
+		msg.playerTitle(p, "TOT", ChatColor.RED, "Du bist gestorben - hast aber gut gekämpft!", ChatColor.LIGHT_PURPLE);
 		p.playSound(p.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_DEATH, 1f, 0.5f);
 
 		Bukkit.getOnlinePlayers().forEach(op -> {
@@ -373,8 +398,23 @@ public class VaroGame {
 
 		playerKill(vp);
 		updatePlayer(p);
+		msg.playerMessage(p, "Falls du ein Teammate hast, wirst du in 10 Sekunden zu ihm teleportiert...",
+				ChatColor.GRAY);
 
 		scoreboardUpdater.updateScoreboard(vp);
+	}
+
+	/*
+	 * See: https://minecraft.fandom.com/wiki/Experience#Leveling_up
+	 */
+	private float experienceToDrop(int level, float progress) {
+		if (level < 16) {
+			return level * level + 6 * level + progress * (2 * level + 7);
+		} else if (level < 32) {
+			return 2.5f * level * level - 40.5f * level + 360 + progress * (5 * level - 38);
+		} else {
+			return 4.5f * level * level - 162.5f * level + 2200 + progress * (9 * level - 158);
+		}
 	}
 
 	public void playerRevive(@NotNull Player p) {
@@ -384,6 +424,7 @@ public class VaroGame {
 		VaroPlayer vp = getPlayerByUUID(p.getUniqueId());
 		playerRevive(vp);
 
+		msg.playerTitle(p, "WIEDERBELEBT", ChatColor.GREEN, "Du lebst jetzt wieder - viel Glück!", ChatColor.AQUA);
 		updatePlayer(p);
 		scoreboardUpdater.updateScoreboard(vp);
 	}
@@ -401,26 +442,30 @@ public class VaroGame {
 			return; // Player is not a spectator
 
 		if (vpTeammate == null || !vpTeammate.alive)
-			return; // has no Teammate or both are dead
+			return; // has no Teammate or Teammate is dead too
 
 		Player teammate = Bukkit.getPlayer(vpTeammate.player);
 
 		if (teammate == null)
 			return; // Teammate is offline
 
+		msg.playerMessage(spectator, "Da dein Teammate noch lebt, kannst du nicht frei zuschauen!",
+				ChatColor.LIGHT_PURPLE);
 		spectator.setSpectatorTarget(teammate);
 		return;
 	}
 
-	private void playerClear(@NotNull Player p) {
+	public void playerClear(@NotNull Player p) {
 		p.getInventory().clear();
 		p.setStatistic(Statistic.TIME_SINCE_REST, 0);
 		p.getActivePotionEffects().forEach(effect -> p.removePotionEffect(effect.getType()));
 		p.setAbsorptionAmount(0);
-		p.setTotalExperience(0);
+		p.setLevel(0);
+		p.setExp(0);
 		p.setArrowsInBody(0);
 		p.setFoodLevel(20);
 		p.setHealth(20);
+		p.setFireTicks(0);
 		p.eject();
 	}
 }

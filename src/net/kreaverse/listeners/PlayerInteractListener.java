@@ -1,5 +1,6 @@
 package net.kreaverse.listeners;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -61,6 +62,7 @@ public class PlayerInteractListener implements Listener {
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent e) {
 		e.setCancelled(game.paused);
+		game.forceSpectate(e.getPlayer(), game.getPlayerByUUID(e.getPlayer().getUniqueId()));
 	}
 
 	@EventHandler
@@ -81,10 +83,15 @@ public class PlayerInteractListener implements Listener {
 		if (e.getSpectatorTarget().getType() != EntityType.PLAYER)
 			return;
 
+		if (game.getState() != GameState.ONGOING) {
+			return;
+		}
+
 		VaroPlayer vpTarget = game.getPlayerByUUID(((Player) e.getSpectatorTarget()).getUniqueId());
 		VaroPlayer vpSpectator = game.getPlayerByUUID(e.getPlayer().getUniqueId());
 
-		if (vpSpectator == null || vpTarget == null || vpSpectator.alive || vpSpectator.getTeammate() == null)
+		if (vpSpectator == null || vpTarget == null || vpSpectator.alive || vpSpectator.getTeammate() == null
+				|| Bukkit.getPlayer(vpSpectator.getTeammate()) == null)
 			return;
 
 		if (vpSpectator.getTeammate().equals(vpTarget.player) && vpTarget.alive) {

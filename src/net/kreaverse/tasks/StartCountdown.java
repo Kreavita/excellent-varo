@@ -6,6 +6,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import net.kreaverse.ExcellentVARO;
 import net.kreaverse.model.VaroGame;
 import net.kreaverse.model.VaroGame.GameState;
 import net.kreaverse.model.VaroMessenger;
@@ -15,10 +16,11 @@ public class StartCountdown extends BukkitRunnable {
 	private VaroGame game;
 	private VaroMessenger msg;
 
-	public StartCountdown(VaroGame game, VaroMessenger msg, int countdown) {
+	public StartCountdown(ExcellentVARO plugin, VaroMessenger msg, int countdown) {
 		this.counter = countdown;
-		this.game = game;
+		this.game = plugin.getGame();
 		this.msg = msg;
+		this.runTaskTimer(plugin, 1L, 20L);
 	}
 
 	@Override
@@ -26,7 +28,7 @@ public class StartCountdown extends BukkitRunnable {
 //		Bukkit.getLogger().log(Level.INFO, "Countdown Task Running, Counter: " + counter);
 		if (counter == 0) {
 			game.updateState(GameState.ONGOING);
-			
+
 			msg.broadcast("Mögen die Spiele beginnen!", ChatColor.GREEN);
 			game.players.forEach(vp -> {
 				msg.playerTitle(vp.player, "START", ChatColor.GREEN, "Exzellenz-Varo hat begonnen!",
@@ -36,9 +38,10 @@ public class StartCountdown extends BukkitRunnable {
 					return;
 
 				p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1, 1);
+				game.playerClear(p);
 				game.updatePlayer(p);
 			});
-			
+
 			this.cancel();
 			return;
 		}

@@ -3,7 +3,9 @@ package net.kreaverse.model;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.logging.Level;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
@@ -14,27 +16,29 @@ public class VaroConfig {
 
 	private FileConfiguration configFile;
 	public BukkitRunnable saveTask;
+	private int saveInterval;
 
 	public VaroConfig(@NotNull ExcellentVARO plugin) {
-		this.configFile = plugin.getConfig();
-		this.saveTask = new BukkitRunnable() {
+		configFile = plugin.getConfig();
+		saveInterval = configFile.getInt("defaults.saveEveryMinutes");
+		saveTask = new BukkitRunnable() {
 			@Override
 			public void run() {
+				Bukkit.getLogger().log(Level.INFO, "Saving Configuration and Data...");
 				configFile.set("game.state", plugin.getGame().getState().toInt);
 				configFile.set("game.borderSize",
 						(int) plugin.getServer().getWorlds().get(0).getWorldBorder().getSize());
-				configFile.set("game.borderMinSize", plugin.getGame().borderMinSize);
-				configFile.set("game.borderShrinkTime", plugin.getGame().borderShrinkTime);
 				plugin.getGame().players.forEach(vp -> {
 					configFile.set("players." + vp.player.toString() + ".teammate",
 							(vp.getTeammate() == null) ? null : vp.getTeammate().toString());
 					configFile.set("players." + vp.player.toString() + ".alive", vp.alive);
+					configFile.set("players." + vp.player.toString() + ".revivesLeft", vp.revivesLeft);
 					for (String stat : vp.stats.keySet())
 						configFile.set("players." + vp.player.toString() + ".stats." + stat, vp.stats.get(stat));
 				});
 			}
 		};
-		saveTask.runTaskTimer(plugin, 1200L, 1200L);
+		saveTask.runTaskTimer(plugin, 20L * 60 * saveInterval, 20L * 60 * saveInterval);
 	}
 
 	private HashMap<String, Double> retrieveStats(UUID uuid) {
@@ -53,12 +57,13 @@ public class VaroConfig {
 		for (String playerUUID : configFile.getConfigurationSection("players").getKeys(false)) {
 
 			String teammateUUID = configFile.getString("players." + playerUUID + ".teammate");
+			int revivesLeft = configFile.getInt("players." + playerUUID + ".revivesLeft");
+			boolean alive = configFile.getBoolean("players." + playerUUID + ".alive");
 
 			UUID player = UUID.fromString(playerUUID);
 			UUID teammate = (teammateUUID == null) ? null : UUID.fromString(teammateUUID);
 
-			players.add(new VaroPlayer(player, teammate, configFile.getBoolean("players." + playerUUID + ".alive"),
-					retrieveStats(player)));
+			players.add(new VaroPlayer(player, teammate, alive, revivesLeft, retrieveStats(player)));
 		}
 
 		return players;

@@ -1,11 +1,10 @@
+defaults:
+  saveEveryMinutes: 5
+  playerRevives: 1
+  borderMinSize: 100
+  borderMaxSize: 1000
+  borderShrinkTime: 600
 game:
   state: 0
   borderSize: 1000
-  
-defaults:
-  defaultBorder: 1000
-  borderStep: 100
-  borderMinSize: 100
-  borderShrinkTime: 600
-
 players:
