@@ -27,5 +27,8 @@ commands:
   description: disbands your current team
   usage: /unteam
  pause:
-  description: vote for a pause, 15 minutes by default
+  description: pause the game, 2 minutes by default
   usage: /pause [<minutes>]
+ unpause:
+  description: unpause the game, with a delay of 5 seconds
+  usage: /unpause

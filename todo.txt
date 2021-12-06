@@ -1,0 +1,7 @@
+DONE AttacksMissed, ShotsMissed nur tracken wenn in Combat
+DONE Team Commands
+DONE Team Glow Testen
+DONE tränke restoren fixen
+DONE init state spawnt alle am spawn
+unterwasser bubbles fixen
+spectator mode verbessern
