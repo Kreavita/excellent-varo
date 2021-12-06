@@ -31,7 +31,6 @@ public class GameCommands implements CommandExecutor {
 		int counter;
 
 		if (command.getName().strip().equalsIgnoreCase("pause")) {
-			System.out.println(command.getName());
 			if (game.getState() != GameState.ONGOING) {
 				msg.errorMessage(sender, "Es läuft gerade kein Spiel.");
 				return true;
@@ -40,7 +39,7 @@ public class GameCommands implements CommandExecutor {
 				msg.errorMessage(sender, "Das Spiel ist bereits pausiert.");
 				return true;
 			}
-			counter = 15;
+			counter = 2;
 			if (args.length > 0) {
 				try {
 					counter = Integer.valueOf(args[0]);
@@ -52,7 +51,6 @@ public class GameCommands implements CommandExecutor {
 			return true;
 		}
 		if (command.getName().strip().equalsIgnoreCase("unpause")) {
-			System.out.println(command.getName());
 			if (game.getState() != GameState.ONGOING) {
 				msg.errorMessage(sender, "Es läuft gerade kein Spiel.");
 				return true;
@@ -111,12 +109,15 @@ public class GameCommands implements CommandExecutor {
 				return true;
 			}
 
+			msg.broadcastDeath(Bukkit.getOfflinePlayer(args[0].strip()).getName(), game.aliveCount);
+
 			p = Bukkit.getPlayer(args[0]);
 			if (p != null) {
 				game.playerKill(p);
 			} else {
-				vp.alive = false;
+				game.playerKill(vp);
 			}
+			msg.successMessage(sender, "Spieler wurde getötet.");
 			return true;
 
 		case "varorevive":
@@ -137,10 +138,14 @@ public class GameCommands implements CommandExecutor {
 			}
 
 			p = Bukkit.getPlayer(args[0]);
+			msg.broadcastRevive(Bukkit.getOfflinePlayer(args[0].strip()).getName(), game.aliveCount);
 			if (p != null) {
 				game.playerRevive(p);
+			} else {
+				game.playerRevive(vp);
 			}
 
+			msg.successMessage(sender, "Spieler wurde wiederbelebt.");
 			return true;
 
 		default:

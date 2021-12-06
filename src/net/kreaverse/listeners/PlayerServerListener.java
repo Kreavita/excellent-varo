@@ -32,8 +32,6 @@ public class PlayerServerListener implements Listener {
 
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent e) {
-		System.out.println("PlayerQuitListener.onPlayerQuit()");
-
 		Player p = e.getPlayer();
 		VaroPlayer vp = game.getPlayerByUUID(p.getUniqueId());
 

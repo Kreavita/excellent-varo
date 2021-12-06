@@ -3,7 +3,6 @@ package net.kreaverse.model;
 import java.util.HashMap;
 import java.util.UUID;
 
-
 public class VaroPlayer {
 
 	public UUID player;
@@ -57,6 +56,8 @@ public class VaroPlayer {
 	}
 
 	public void setAttacker(UUID attacker) {
+		if (attacker.equals(player))
+			return;
 		lastAttacker = attacker;
 		attackedCooldown = 31;
 	}

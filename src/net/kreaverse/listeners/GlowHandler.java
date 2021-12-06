@@ -1,6 +1,7 @@
 package net.kreaverse.listeners;
 
 import java.util.List;
+import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
@@ -33,6 +34,7 @@ public class GlowHandler {
 	public GlowHandler(VaroGame game, ExcellentVARO plugin) {
 		this.game = game;
 		this.plugin = plugin;
+		initPacketListener();
 	}
 
 	public void sendUpdatePackets(Player target) { // trigger the glow listener by resending the last metadata packet
@@ -46,7 +48,7 @@ public class GlowHandler {
 		});
 	}
 
-	public void initPacketListener() {
+	private void initPacketListener() {
 		ProtocolLibrary.getProtocolManager().addPacketListener(
 				new PacketAdapter(plugin, ListenerPriority.NORMAL, PacketType.Play.Server.ENTITY_METADATA) {
 					@Override
@@ -65,11 +67,20 @@ public class GlowHandler {
 
 						VaroPlayer glowTarget = game.getPlayerByUUID(((Player) entity).getUniqueId());
 
-						if (glowTarget == null || glowTarget.getTeammate() == null)
-							return;
+						boolean targetShouldGlow = !(glowTarget == null || glowTarget.getTeammate() == null
+								|| !glowTarget.getTeammate().equals(receiver.getUniqueId()));
 
-						boolean targetShouldGlow = glowTarget.getTeammate().equals(receiver.getUniqueId());
-						System.out.println(targetShouldGlow);
+						if (!targetShouldGlow) {
+							try {
+								Thread.sleep(1);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							// Bukkit.getLogger().log(Level.INFO, targetShouldGlow + ": " + ((Player)
+							// entity).getName()
+							// + " -> " + receiver.getName());
+						}
 
 						List<DataWatcher.Item<?>> items = (List<Item<?>>) packet.getModifier().withType(List.class)
 								.read(0);

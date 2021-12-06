@@ -37,8 +37,8 @@ public class PlayerInteractListener implements Listener {
 			return;
 		}
 
-		if (e.getAction().equals(Action.LEFT_CLICK_AIR)) {
-			vp.incrementStat("AttacksMissed", 1);
+		if (e.getAction().equals(Action.LEFT_CLICK_AIR) && vp.lastAttacker != null) {
+			vp.incrementStat("attacksMissed", 1);
 		}
 	}
 
@@ -55,7 +55,7 @@ public class PlayerInteractListener implements Listener {
 			e.setCancelled(true);
 			return;
 		}
-		vp.incrementStat("ShotsMissed", 1); // This will be subtracted once the projectile hits its target.
+		vp.incrementStat("shotsMissed", 1); // This will be subtracted once the projectile hits its target.
 	}
 
 	@EventHandler

@@ -24,6 +24,7 @@ public class ScoreboardUpdater extends BukkitRunnable {
 	@Override
 	public void run() {
 		game.players.stream().filter(vp -> Bukkit.getPlayer(vp.player) != null).forEach(vp -> updateScoreboard(vp));
+//		Bukkit.getOnlinePlayers().forEach(p ->game.pl.sendUpdatePackets(p));
 	}
 
 	public void updateScoreboard(@NotNull VaroPlayer vp) {
@@ -62,20 +63,21 @@ public class ScoreboardUpdater extends BukkitRunnable {
 			stateStr = "§7§lVorbereitung";
 			break;
 		}
-		
-		varo.getScore("Spielstatus: " + stateStr).setScore(99);
-		varo.getScore("Lebende Spieler: §9§l" + game.aliveCount).setScore(98);
-		varo.getScore("Border: §c§l" + (int) Bukkit.getServer().getWorlds().get(0).getWorldBorder().getSize() + " Blöcke")
+
+		varo.getScore(" Spielstatus: " + stateStr).setScore(99);
+		varo.getScore(" Lebende Spieler: §c§l" + game.aliveCount).setScore(98);
+		varo.getScore(
+				" Border: §c§l" + (int) Bukkit.getServer().getWorlds().get(0).getWorldBorder().getSize() + " Blöcke")
 				.setScore(97);
 		varo.getScore("    ").setScore(90);
-		varo.getScore("§n§lDein Team:").setScore(89);
-		varo.getScore("Wiederbelebungen: §a§l" + 1).setScore(88);
+		varo.getScore(" §n§lDein Team:").setScore(89);
 		varo.getScore("   ").setScore(80);
 
-		varo.getScore("§l§u§g" + p.getName() + ": §l"
-				+ ((vp.alive) ? "§a" + Math.max(0, Math.round(p.getHealth() - pDamage) / 2f) + " HP" : "§cTOT"))
+		varo.getScore(" §l§u§g" + p.getName() + ": "
+				+ ((vp.alive) ? "§a§l" + Math.max(0, Math.round(p.getHealth() - pDamage) / 2f) + " HP" : "§c§lTOT"))
 				.setScore(79);
-		varo.getScore("Kills: §2" + Math.round(vp.stats.get("kills"))).setScore(78);
+		varo.getScore(" Kills: §2§l" + Math.round(vp.stats.get("kills"))).setScore(78);
+		varo.getScore(" Leben: §a§l" + 1).setScore(77);
 		varo.getScore("  ").setScore(70);
 
 		if (tm != null) {
@@ -83,14 +85,15 @@ public class ScoreboardUpdater extends BukkitRunnable {
 			if (vpTeammate != null) {
 				String tmHealth = (Bukkit.getPlayer(tm) == null) ? "LEBENDIG"
 						: Math.max(0, Math.round(Bukkit.getPlayer(tm).getHealth() - tmDamage) / 2f) + " HP";
-				varo.getScore("§l§u§g" + Bukkit.getOfflinePlayer(tm).getName() + ": §l"
-						+ ((vpTeammate.alive) ? "§a" + tmHealth : "§cTOT")).setScore(62);
-				varo.getScore("Kills: §2" + Math.round(vpTeammate.stats.get("kills")) + " ").setScore(61);
+				varo.getScore(" §l§u§g" + Bukkit.getOfflinePlayer(tm).getName() + ": "
+						+ ((vpTeammate.alive) ? "§a§l" + tmHealth : "§c§lTOT")).setScore(69);
+				varo.getScore(" Kills: §2§l" + Math.round(vpTeammate.stats.get("kills")) + " ").setScore(68);
+				varo.getScore(" Leben: §a§l" + 1 + " ").setScore(67);
 				varo.getScore(" ").setScore(60);
 			}
 		}
 
-		varo.getScore("§7§oViel Glück!").setScore(1);
+		varo.getScore(" §7§oViel Glück!").setScore(1);
 
 		p.setScoreboard(scoreboard);
 	}

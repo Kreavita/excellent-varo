@@ -118,7 +118,7 @@ public class TeamCommands implements CommandExecutor {
 				oldTeammate.setTeammate(null);
 				if (Bukkit.getPlayer(oldTeammate.player) != null) {
 					msg.successMessage(Bukkit.getPlayer(oldTeammate.player),
-							"Dein Team mit " + p.getName() + "entfernt!");
+							"Dein Team mit " + p.getName() + " wurde entfernt!");
 				}
 			}
 			vp.setTeammate(null);

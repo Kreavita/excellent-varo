@@ -2,8 +2,6 @@ package net.kreaverse.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -63,7 +61,7 @@ public class VaroGame {
 
 	private ExcellentVARO plugin;
 	private VaroMessenger msg;
-	private GlowHandler pl;
+	public GlowHandler pl;
 
 	private HashMap<String, BukkitRunnable> timerThreads;
 	private ScoreboardUpdater scoreboardUpdater;
@@ -72,7 +70,7 @@ public class VaroGame {
 		this.plugin = plugin;
 		this.msg = msg;
 		this.scoreboardUpdater = new ScoreboardUpdater(this);
-		scoreboardUpdater.runTaskTimer(plugin, 1L, 200L);
+		scoreboardUpdater.runTaskTimer(plugin, 1L, 100L);
 
 		paused = false;
 		borderSize = plugin.getConfig().getInt("border.borderSize");
@@ -85,7 +83,6 @@ public class VaroGame {
 		timerThreads = new HashMap<String, BukkitRunnable>();
 
 		pl = new GlowHandler(this, plugin);
-		pl.initPacketListener();
 
 		updateState(GameState.fromInt(plugin.getConfig().getInt("game.state")));
 	}
@@ -149,13 +146,19 @@ public class VaroGame {
 				p.setGameMode(GameMode.SPECTATOR);
 				msg.playerMessage(p, "Falls du ein Teammate hast, wirst du in 10 Sekunden zu ihm teleportiert...",
 						ChatColor.GRAY);
-				forceSpectate(p, getPlayerByUUID(vp.getTeammate()));
-//				Timer timer = new Timer();
-//				timer.schedule(new TimerTask() {
-//					@Override
-//					public void run() {
-//					}
-//				}, 10000);
+
+				if (timerThreads.get("forceSpectateTimer") != null
+						&& !timerThreads.get("forceSpectateTimer").isCancelled()) {
+					timerThreads.get("forceSpectateTimer").cancel();
+				}
+
+				timerThreads.put("forceSpectateTimer", new BukkitRunnable() {
+					@Override
+					public void run() {
+						forceSpectate(p, getPlayerByUUID(vp.getTeammate()));
+					}
+				});
+				timerThreads.get("forceSpectateTimer").runTaskLater(plugin, 20L * 10);
 			} else {
 				p.setGameMode(GameMode.SURVIVAL);
 			}
@@ -232,12 +235,14 @@ public class VaroGame {
 		if (!paused)
 			return;
 
-		if (timerThreads.get("pauseTimer") == null)
+		if (timerThreads.get("pauseTimer") == null
+				|| (timerThreads.get("resumeTimer") != null && !timerThreads.get("resumeTimer").isCancelled()))
 			return;
 
 		msg.broadcast(name + " hebt die Pause auf. Das Spiel wird in 5 Sekunden fortgesetzt...", ChatColor.YELLOW);
-		Timer timer = new Timer();
-		timer.schedule(new TimerTask() {
+		Bukkit.getServer().getWorlds().forEach(world -> world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true));
+
+		timerThreads.put("resumeTimer", new BukkitRunnable() {
 			@Override
 			public void run() {
 				timerThreads.get("pauseTimer").run();
@@ -248,7 +253,8 @@ public class VaroGame {
 				}
 				timerThreads.replace("pauseTimer", null);
 			}
-		}, 5000L);
+		});
+		timerThreads.get("resumeTimer").runTaskLater(plugin, 20L * 5);
 	}
 
 	private void gameOver() {
@@ -375,10 +381,18 @@ public class VaroGame {
 		if (state != GameState.ONGOING)
 			return;
 
-		aliveCount++;
 		VaroPlayer vp = getPlayerByUUID(p.getUniqueId());
-		vp.alive = true;
+		playerRevive(vp);
+
 		updatePlayer(p);
+		scoreboardUpdater.updateScoreboard(vp);
+	}
+
+	public void playerRevive(@NotNull VaroPlayer vp) {
+		if (state != GameState.ONGOING)
+			return;
+		aliveCount++;
+		vp.alive = true;
 		scoreboardUpdater.run();
 	}
 

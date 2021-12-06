@@ -47,8 +47,15 @@ public class VaroMessenger {
 	public void broadcastDeath(String victim, long aliveCount) {
 		Bukkit.getOnlinePlayers()
 				.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1));
-		Bukkit.broadcast(Component.text(
-				excellentVaro + ChatColor.RED + victim + " ist gestorben. Es leben noch " + (aliveCount - 1) + " Spieler."));
+		Bukkit.broadcast(Component.text(excellentVaro + ChatColor.RED + victim + " ist gestorben. Es leben noch "
+				+ (aliveCount - 1) + " Spieler."));
+	}
+
+	public void broadcastRevive(String victim, long aliveCount) {
+		Bukkit.getOnlinePlayers()
+				.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1));
+		Bukkit.broadcast(Component.text(excellentVaro + ChatColor.LIGHT_PURPLE + victim
+				+ " wude wiederbelebt. Es leben jetzt wieder " + (aliveCount + 1) + " Spieler."));
 	}
 
 	public void broadcastKill(String attacker, String victim, long killCount, long aliveCount) {
