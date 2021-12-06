@@ -25,73 +25,46 @@ public class BlockChangesListener implements Listener {
 
 	@EventHandler
 	public void onBlockBreak(BlockBreakEvent e) {
-		if (game.paused || game.state != GameState.ONGOING) {
-			e.setCancelled(true);
-			return;
-		}
+		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
 	}
 
 	@EventHandler
 	public void onBlockPlace(BlockPlaceEvent e) {
-		if (game.paused || game.state != GameState.ONGOING) {
-			e.setCancelled(true);
-			return;
-		}
+		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
 	}
 
 	@EventHandler
 	public void onBlockBurn(BlockBurnEvent e) {
-		if (game.paused || game.state != GameState.ONGOING) {
-			e.setCancelled(true);
-			return;
-		}
+		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
 	}
 
 	@EventHandler
 	public void onBlockDrop(BlockDropItemEvent e) {
-		if (game.paused || game.state != GameState.ONGOING) {
-			e.setCancelled(true);
-			return;
-		}
+		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
 	}
 
 	@EventHandler
 	public void onBlockGrow(BlockGrowEvent e) {
-		if (game.paused || game.state != GameState.ONGOING) {
-			e.setCancelled(true);
-			return;
-		}
+		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
 	}
 
 	@EventHandler
 	public void onBlockIgnite(BlockIgniteEvent e) {
-		if (game.paused || game.state != GameState.ONGOING) {
-			e.setCancelled(true);
-			return;
-		}
+		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
 	}
 
 	@EventHandler
 	public void onTNTPrime(TNTPrimeEvent e) {
-		if (game.paused || game.state != GameState.ONGOING) {
-			e.setCancelled(true);
-			return;
-		}
+		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
 	}
 
 	@EventHandler
 	public void onLeavesDecayEvent(LeavesDecayEvent e) {
-		if (game.paused || game.state != GameState.ONGOING) {
-			e.setCancelled(true);
-			return;
-		}
+		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
 	}
 
 	@EventHandler
 	public void onFluidLevelChange(FluidLevelChangeEvent e) {
-		if (game.paused || game.state != GameState.ONGOING) {
-			e.setCancelled(true);
-			return;
-		}
+		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
 	}
 }

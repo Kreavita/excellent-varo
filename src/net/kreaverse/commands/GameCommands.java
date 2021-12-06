@@ -26,69 +26,101 @@ public class GameCommands implements CommandExecutor {
 	@Override
 	public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
 			@NotNull String[] args) {
+		Player p;
+		VaroPlayer vp;
+		int counter;
+
+		if (command.getName().strip().equalsIgnoreCase("pause")) {
+			System.out.println(command.getName());
+			if (game.getState() != GameState.ONGOING) {
+				msg.errorMessage(sender, "Es läuft gerade kein Spiel.");
+				return true;
+			}
+			if (game.paused) {
+				msg.errorMessage(sender, "Das Spiel ist bereits pausiert.");
+				return true;
+			}
+			counter = 15;
+			if (args.length > 0) {
+				try {
+					counter = Integer.valueOf(args[0]);
+				} catch (NumberFormatException e) {
+					Bukkit.getLogger().log(Level.WARNING, "Pause Command wurde mit ungültigem Integerwert aufgerufen!");
+				}
+			}
+			game.pause(counter, sender.getName());
+			return true;
+		}
+		if (command.getName().strip().equalsIgnoreCase("unpause")) {
+			System.out.println(command.getName());
+			if (game.getState() != GameState.ONGOING) {
+				msg.errorMessage(sender, "Es läuft gerade kein Spiel.");
+				return true;
+			}
+			if (!game.paused) {
+				msg.errorMessage(sender, "Das Spiel ist nicht pausiert.");
+				return true;
+			}
+			game.resume(sender.getName());
+			return true;
+		}
+
 		if (!sender.isOp()) {
 			msg.errorMessage(sender, "Dieser Befehl kann nur von Serveroperatoren ausgeführt werden.");
 			return true;
 		}
 
-		Player p;
-		VaroPlayer vp;
-
 		switch (command.getName()) {
-
 		case "start":
-			if (game.state == GameState.ONGOING) {
+			if (game.getState() == GameState.ONGOING) {
 				msg.errorMessage(sender, "Das Spiel läuft bereits.");
 				return true;
 			}
+			counter = 61;
 			if (args.length > 0) {
 				try {
-					game.start(Integer.valueOf(args[0]));
-					return true;
+					counter = Integer.valueOf(args[0]);
 				} catch (NumberFormatException e) {
 					Bukkit.getLogger().log(Level.WARNING, "Start Command wurde mit ungültigem Integerwert aufgerufen!");
 				}
 			}
-			game.start(61);
+			game.start(counter);
 			return true;
 
 		case "reset":
-			if (game.state == GameState.IDLE) {
+			if (game.getState() == GameState.IDLE) {
 				msg.errorMessage(sender, "Das Spiel wurde noch nicht gestartet.");
 				return true;
 			}
-			game.reset();
+			game.updateState(GameState.IDLE);
 			return true;
-
 		case "varokill":
-			if (game.state != GameState.ONGOING) {
-				msg.errorMessage(sender, "Es läuft gerade kein Spiel.");
-				return true;
-			}
-
 			if (args.length != 1) {
 				msg.errorMessage(sender, "Die Anzahl der Argumente stimmt nicht.");
 				return false;
 			}
 
-			vp = game.getPlayerByUUID(Bukkit.getOfflinePlayer(args[0]).getUniqueId());
-
-			if (!vp.alive) {
-				msg.errorMessage(sender, "Dieser Spieler ist bereits tot.");
-				return false;
+			if (game.getState() != GameState.ONGOING) {
+				msg.errorMessage(sender, "Es läuft gerade kein Spiel.");
+				return true;
 			}
 
-			vp.alive = false;
+			vp = game.getPlayerByUUID(Bukkit.getOfflinePlayer(args[0].strip()).getUniqueId());
+			if (vp == null || !vp.alive) {
+				msg.errorMessage(sender, "Dieser Spieler existiert nicht oder ist bereits tot.");
+				return true;
+			}
+
 			p = Bukkit.getPlayer(args[0]);
-
 			if (p != null) {
-				game.updatePlayer(p);
+				game.playerKill(p);
+			} else {
+				vp.alive = false;
 			}
-
 			return true;
 
 		case "varorevive":
-			if (game.state != GameState.ONGOING) {
+			if (game.getState() != GameState.ONGOING) {
 				msg.errorMessage(sender, "Es läuft gerade kein Spiel.");
 				return true;
 			}
@@ -99,17 +131,14 @@ public class GameCommands implements CommandExecutor {
 			}
 
 			vp = game.getPlayerByUUID(Bukkit.getOfflinePlayer(args[0]).getUniqueId());
-
 			if (vp.alive) {
 				msg.errorMessage(sender, "Dieser Spieler ist bereits am Leben.");
-				return false;
+				return true;
 			}
 
-			vp.alive = true;
 			p = Bukkit.getPlayer(args[0]);
-
 			if (p != null) {
-				game.updatePlayer(p);
+				game.playerRevive(p);
 			}
 
 			return true;

@@ -18,7 +18,7 @@ public class FightTracker extends BukkitRunnable {
 
 	@Override
 	public void run() {
-		if (game.state != GameState.ONGOING) {
+		if (game.getState() != GameState.ONGOING) {
 			this.cancel();
 			return;
 		}

@@ -51,7 +51,7 @@ public class StatsCommand implements CommandExecutor {
 
 		msg.successMessage(sender, "Statistiken für " + target.getName());
 		vp.stats.forEach((statName, statValue) -> {
-			msg.successMessage(sender, "\t" + statName + " : " + (float) Math.round(statValue * 100) / 100f);
+			msg.successMessage(sender, statName + " : " + (float) Math.round(statValue * 100) / 100f);
 		});
 
 		return true;

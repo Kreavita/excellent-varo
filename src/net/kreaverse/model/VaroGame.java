@@ -11,15 +11,19 @@ import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.GameRule;
 import org.bukkit.Sound;
+import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import net.kreaverse.ExcellentVARO;
-import net.kreaverse.tasks.BorderShrinker;
+import net.kreaverse.listeners.GlowHandler;
 import net.kreaverse.tasks.FightTracker;
+import net.kreaverse.tasks.ScoreboardUpdater;
 import net.kreaverse.tasks.StartCountdown;
+import net.kreaverse.tasks.UnpauseGame;
 
 public class VaroGame {
 
@@ -45,62 +49,138 @@ public class VaroGame {
 		}
 	}
 
-	public GameState state;
-
 	public ArrayList<VaroPlayer> players;
 	public long aliveCount;
 
 	public int borderSize;
+	public int defaultBorderSize;
 	public int borderMinSize;
-	public int borderShrinkTime; // 10 Minutes
+	public int borderShrinkTime;
 
-	private int pauseCounter = 0;
-	private int pauseDuration = 0;
 	public boolean paused = false;
+
+	private GameState state;
 
 	private ExcellentVARO plugin;
 	private VaroMessenger msg;
+	private GlowHandler pl;
 
-	private Timer timer = new Timer();
 	private HashMap<String, BukkitRunnable> timerThreads;
+	private ScoreboardUpdater scoreboardUpdater;
 
-	public VaroGame(ExcellentVARO plugin, @NotNull VaroMessenger msg) {
+	public VaroGame(ExcellentVARO plugin, @NotNull VaroMessenger msg, @NotNull VaroConfig cfg) {
 		this.plugin = plugin;
 		this.msg = msg;
+		this.scoreboardUpdater = new ScoreboardUpdater(this);
+		scoreboardUpdater.runTaskTimer(plugin, 1L, 200L);
 
-		borderSize = plugin.getConfig().getInt("game.borderSize");
-		borderMinSize = plugin.getConfig().getInt("game.borderMinSize");
-		borderShrinkTime = plugin.getConfig().getInt("game.borderShrinkTime");
-
-		state = GameState.fromInt(plugin.getConfig().getInt("game.state"));
-
-		pauseCounter = 0;
-		pauseDuration = 0;
 		paused = false;
+		borderSize = plugin.getConfig().getInt("border.borderSize");
 
-		players = new ArrayList<VaroPlayer>();
-		// TODO: restore Player stats from config
+		borderMinSize = plugin.getConfig().getInt("defaults.borderMinSize");
+		defaultBorderSize = plugin.getConfig().getInt("defaults.defaultBorder");
+		borderShrinkTime = plugin.getConfig().getInt("defaults.borderShrinkTime");
 
+		players = cfg.loadPlayers();
 		timerThreads = new HashMap<String, BukkitRunnable>();
 
-		if (state == GameState.ONGOING) {
-			initIngameThreads();
-		}
+		pl = new GlowHandler(this, plugin);
+		pl.initPacketListener();
 
-		Bukkit.getServer().getWorlds().forEach(world -> world.getWorldBorder().setSize(borderSize));
+		updateState(GameState.fromInt(plugin.getConfig().getInt("game.state")));
 	}
 
-	public void initIngameThreads() {
-		if (timerThreads.get("borderShrinker") != null) {
-			try {
-				timerThreads.get("borderShrinker").cancel();
-			} catch (IllegalStateException e) {
-				plugin.getLogger().log(Level.INFO, "borderShrinker couldn't be cancelled");
-			}
-		}
-		timerThreads.put("borderShrinker", new BorderShrinker(this, msg));
-		timerThreads.get("borderShrinker").runTaskTimer(plugin, 20L * borderShrinkTime, 20L * borderShrinkTime);
+	public void updateState(GameState newState) {
+		if (state == newState)
+			return;
 
+		state = newState;
+
+		switch (newState) {
+		case IDLE:
+			Bukkit.getServer().getWorlds().forEach(world -> {
+				world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+				world.setTime(0);
+				world.getWorldBorder().setSize(defaultBorderSize);
+			});
+
+			players.forEach(vp -> {
+				vp.alive = true;
+				if (Bukkit.getPlayer(vp.player) != null) {
+					Player p = Bukkit.getPlayer(vp.player);
+					updatePlayer(p);
+					p.teleport(p.getWorld().getSpawnLocation());
+				}
+			});
+			break;
+
+		case FINISHED:
+			Bukkit.getServer().getWorlds().forEach(world -> {
+				world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+				world.getWorldBorder().setSize(world.getWorldBorder().getSize());
+			});
+			break;
+
+		case ONGOING:
+			Bukkit.getServer().getWorlds().forEach(world -> {
+				world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
+				world.getWorldBorder().setSize(borderMinSize, Math.round(
+						((float) ((defaultBorderSize - borderSize) * borderShrinkTime) / (float) defaultBorderSize)));
+			});
+			initIngameThreads();
+			break;
+
+		default:
+			break;
+		}
+		scoreboardUpdater.run();
+	}
+
+	public void updatePlayer(@NotNull Player p) {
+		switch (state) {
+		case IDLE:
+			playerClear(p);
+			p.setGameMode(GameMode.ADVENTURE);
+			break;
+		case ONGOING:
+			playerClear(p);
+			VaroPlayer vp = getPlayerByUUID(p.identity().uuid());
+			if (!vp.alive) {
+				p.setGameMode(GameMode.SPECTATOR);
+				msg.playerMessage(p, "Falls du ein Teammate hast, wirst du in 10 Sekunden zu ihm teleportiert...",
+						ChatColor.GRAY);
+				forceSpectate(p, getPlayerByUUID(vp.getTeammate()));
+//				Timer timer = new Timer();
+//				timer.schedule(new TimerTask() {
+//					@Override
+//					public void run() {
+//					}
+//				}, 10000);
+			} else {
+				p.setGameMode(GameMode.SURVIVAL);
+			}
+			break;
+		case FINISHED:
+			p.setGameMode(GameMode.SPECTATOR);
+			break;
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + state);
+		}
+	}
+
+	public GameState getState() {
+		return state;
+	}
+
+	public VaroPlayer getPlayerByUUID(UUID uuid) {
+		return players.stream().filter(varoPlayer -> varoPlayer.player.equals(uuid)).findFirst().orElse(null);
+	}
+
+	private ArrayList<VaroPlayer> getAlivePlayers() {
+		return players.stream().filter(varoPlayer -> varoPlayer.alive).collect(Collectors.toCollection(ArrayList::new));
+	}
+
+	private void initIngameThreads() {
 		if (timerThreads.get("fightTracker") != null) {
 			try {
 				timerThreads.get("fightTracker").cancel();
@@ -112,7 +192,6 @@ public class VaroGame {
 		timerThreads.get("fightTracker").runTaskTimer(plugin, 1L, 20L);
 
 		aliveCount = players.stream().filter(varoPlayer -> varoPlayer.alive).count();
-		System.out.println(aliveCount);
 	}
 
 	public void start(int countdown) {
@@ -127,47 +206,61 @@ public class VaroGame {
 				plugin.getLogger().log(Level.INFO, "startCountdown couldn't be cancelled");
 			}
 		}
-
 		timerThreads.put("startCountdown", new StartCountdown(this, msg, countdown));
 		timerThreads.get("startCountdown").runTaskTimer(plugin, 1L, 20L);
 	}
 
-	public long pause(int duration) {
+	public void pause(int duration, String name) {
 		if (paused)
-			return -1;
+			return;
 
-		if (pauseCounter == 0) {
-			pauseDuration = duration;
+		msg.broadcast(name + " hat das Spiel wird für " + duration + " Minuten pausiert!", ChatColor.YELLOW);
+
+		if (timerThreads.get("pauseTimer") != null) {
+			try {
+				timerThreads.get("pauseTimer").cancel();
+			} catch (IllegalStateException e) {
+				plugin.getLogger().log(Level.INFO, "pauseTimer couldn't be cancelled");
+			}
 		}
-		pauseCounter++;
 
-		long aliveOnlinePlayers = players.stream()
-				.filter(varoPlayer -> varoPlayer.alive && Bukkit.getPlayer(varoPlayer.player) != null).count();
+		timerThreads.put("pauseTimer", new UnpauseGame(this));
+		timerThreads.get("pauseTimer").runTaskLater(plugin, 1200L * duration);
+	}
 
-		if (pauseCounter < aliveOnlinePlayers / 2)
-			return aliveOnlinePlayers / 2 - pauseCounter;
+	public void resume(String name) {
+		if (!paused)
+			return;
 
-		pauseCounter = 0;
-		paused = true;
+		if (timerThreads.get("pauseTimer") == null)
+			return;
+
+		msg.broadcast(name + " hebt die Pause auf. Das Spiel wird in 5 Sekunden fortgesetzt...", ChatColor.YELLOW);
+		Timer timer = new Timer();
 		timer.schedule(new TimerTask() {
 			@Override
 			public void run() {
-				paused = false;
+				timerThreads.get("pauseTimer").run();
+				try {
+					timerThreads.get("pauseTimer").cancel();
+				} catch (IllegalStateException e) {
+					plugin.getLogger().log(Level.INFO, "pauseTimer couldn't be cancelled");
+				}
+				timerThreads.replace("pauseTimer", null);
 			}
-		}, pauseDuration * 60000);
-		return 0;
+		}, 5000L);
 	}
 
 	private void gameOver() {
 		if (state != GameState.ONGOING)
 			return;
 
-		state = GameState.FINISHED;
+		updateState(GameState.FINISHED);
 		ArrayList<VaroPlayer> winners = getAlivePlayers();
 
-		String broadcastMessage = "Varo ist vorbei.";
+		String broadcastMessage = "Varo ist vorbei. ";
 		if (winners.size() > 0) {
-			broadcastMessage += " Gewinner:";
+			broadcastMessage += "Gewinner:";
 			for (VaroPlayer varoPlayer : winners) {
 				broadcastMessage += " " + Bukkit.getOfflinePlayer(varoPlayer.player).getName() + ",";
 				msg.playerMessage(varoPlayer.player,
@@ -190,29 +283,67 @@ public class VaroGame {
 		msg.broadcast(broadcastMessage, ChatColor.GREEN);
 	}
 
-	public void reset() {
-		borderSize = plugin.getConfig().getInt("defaults.defaultBorder");
-		state = GameState.IDLE;
-		players.forEach(vp -> {
-			vp.alive = true;
-			if (Bukkit.getPlayer(vp.player) != null) {
-				updatePlayer(Bukkit.getPlayer(vp.player));
+	public VaroPlayer playerJoin(Player p) {
+		VaroPlayer vp = getPlayerByUUID(p.getUniqueId());
+
+		if (vp == null) {
+			vp = new VaroPlayer(p.getUniqueId());
+			vp.alive = state == GameState.IDLE;
+			players.add(vp);
+		}
+
+		if (!vp.alive) {
+			msg.playerTitle(p, "Zuschauer", ChatColor.GRAY, "Das Spiel hat bereits begonnen oder du bist bereits tot",
+					ChatColor.LIGHT_PURPLE);
+		}
+		updatePlayer(p);
+		scoreboardUpdater.run();
+		return vp;
+	}
+
+	public void updateTeamGlow(Player p1, Player p2) {
+		if (p1 != null) {
+			pl.sendUpdatePackets(p1);
+		}
+		if (p2 != null) {
+			pl.sendUpdatePackets(p2);
+		}
+	}
+
+	public void playerHPChange(Player p, double damage) {
+		VaroPlayer vp = getPlayerByUUID(p.getUniqueId());
+
+		if (vp == null)
+			return;
+
+		scoreboardUpdater.updateScoreboard(vp, damage, 0);
+
+		VaroPlayer teammate = getPlayerByUUID(vp.getTeammate());
+
+		if (teammate == null)
+			return;
+
+		scoreboardUpdater.updateScoreboard(teammate, 0, damage);
+	}
+
+	public void playerKill(@NotNull VaroPlayer vp) {
+		aliveCount--;
+		vp.incrementStat("deaths", 1);
+		vp.alive = false;
+
+		if (aliveCount == 2) {
+			ArrayList<VaroPlayer> alivePlayers = getAlivePlayers();
+			if (alivePlayers.get(0).player.equals(alivePlayers.get(1).getTeammate())
+					|| alivePlayers.get(1).player.equals(alivePlayers.get(0).getTeammate())) {
+				gameOver();
 			}
-		});
-		plugin.getServer().getWorlds().forEach(world -> {
-			world.setTime(0);
-		});
+		} else if (aliveCount <= 1)
+			gameOver();
+
+		scoreboardUpdater.run();
 	}
 
-	public VaroPlayer getPlayerByUUID(UUID uuid) {
-		return players.stream().filter(varoPlayer -> varoPlayer.player.equals(uuid)).findFirst().orElse(null);
-	}
-
-	public ArrayList<VaroPlayer> getAlivePlayers() {
-		return players.stream().filter(varoPlayer -> varoPlayer.alive).collect(Collectors.toCollection(ArrayList::new));
-	}
-
-	public void kill(@NotNull Player p) {
+	public void playerKill(@NotNull Player p) {
 		if (state != GameState.ONGOING)
 			return;
 
@@ -223,10 +354,7 @@ public class VaroGame {
 
 		p.getInventory().clear();
 
-		aliveCount--;
 		VaroPlayer vp = getPlayerByUUID(p.getUniqueId());
-		vp.alive = false;
-		updatePlayer(p);
 
 		msg.playerTitle(p, "TOT", ChatColor.DARK_RED, "Du bist gestorben - hast aber gut gekämpft!", ChatColor.RED);
 		p.playSound(p.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_DEATH, 1f, 0.5f);
@@ -237,17 +365,13 @@ public class VaroGame {
 			op.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1, 1);
 		});
 
-		if (aliveCount == 2) {
-			ArrayList<VaroPlayer> alivePlayers = getAlivePlayers();
-			if (alivePlayers.get(0).player.equals(alivePlayers.get(1).teammate)
-					|| alivePlayers.get(1).player.equals(alivePlayers.get(0).teammate)) {
-				gameOver();
-			}
-		} else if (aliveCount <= 1)
-			gameOver();
+		playerKill(vp);
+		updatePlayer(p);
+
+		scoreboardUpdater.updateScoreboard(vp);
 	}
 
-	public void revive(@NotNull Player p) {
+	public void playerRevive(@NotNull Player p) {
 		if (state != GameState.ONGOING)
 			return;
 
@@ -255,36 +379,33 @@ public class VaroGame {
 		VaroPlayer vp = getPlayerByUUID(p.getUniqueId());
 		vp.alive = true;
 		updatePlayer(p);
+		scoreboardUpdater.run();
 	}
 
-	public void updatePlayer(@NotNull Player p) {
-		switch (state) {
-		case IDLE:
-			p.setGameMode(GameMode.ADVENTURE);
-			clearPlayer(p);
-			break;
-		case ONGOING:
-			if (!getPlayerByUUID(p.identity().uuid()).alive) {
-				p.setGameMode(GameMode.SPECTATOR);
-			} else {
-				p.setGameMode(GameMode.SURVIVAL);
-			}
-			break;
-		case FINISHED:
-			p.setGameMode(GameMode.SPECTATOR);
-			break;
-		default:
-			throw new IllegalArgumentException("Unexpected value: " + state);
-		}
+	public void forceSpectate(@NotNull Player spectator, VaroPlayer vpTeammate) {
+		if (spectator.getGameMode() != GameMode.SPECTATOR)
+			return; // Player is not a spectator
+
+		if (vpTeammate == null || !vpTeammate.alive)
+			return; // has no Teammate or both are dead
+
+		Player teammate = Bukkit.getPlayer(vpTeammate.player);
+
+		if (teammate == null)
+			return; // Teammate is offline
+
+		spectator.setSpectatorTarget(teammate);
+		return;
 	}
 
-	private void clearPlayer(@NotNull Player p) {
+	private void playerClear(@NotNull Player p) {
 		p.getInventory().clear();
-		p.getActivePotionEffects().clear();
+		p.setStatistic(Statistic.TIME_SINCE_REST, 0);
+		p.getActivePotionEffects().forEach(effect -> p.removePotionEffect(effect.getType()));
 		p.setAbsorptionAmount(0);
 		p.setTotalExperience(0);
 		p.setArrowsInBody(0);
-		p.setSaturation(20);
+		p.setFoodLevel(20);
 		p.setHealth(20);
 		p.eject();
 	}

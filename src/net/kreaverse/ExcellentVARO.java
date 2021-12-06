@@ -21,7 +21,7 @@ import net.kreaverse.model.VaroMessenger;
 public class ExcellentVARO extends JavaPlugin {
 
 	private VaroGame game;
-	private VaroConfig config;
+	private VaroConfig cfg;
 	private VaroMessenger msg;
 
 	private PluginManager pm = this.getServer().getPluginManager();
@@ -29,18 +29,18 @@ public class ExcellentVARO extends JavaPlugin {
 	public void onEnable() {
 		saveDefaultConfig();
 		msg = new VaroMessenger();
-		game = new VaroGame(this, msg);
-		config = new VaroConfig(this.getConfig(), game);
-
+		cfg = new VaroConfig(this);
+		game = new VaroGame(this, msg, cfg);
+		
 		pm.registerEvents(new PlayerServerListener(game, msg), this);
-		pm.registerEvents(new PlayerInteractListener(game, msg), this);
+		pm.registerEvents(new PlayerInteractListener(game), this);
 		pm.registerEvents(new EntityDamageListener(game, msg), this);
 		pm.registerEvents(new BlockChangesListener(game), this);
 		pm.registerEvents(new GameProgressionListener(game), this);
 
 		CommandExecutor teamExecutor = new TeamCommands(game, msg);
 		CommandExecutor gameExecutor = new GameCommands(game, msg);
-
+		
 		getCommand("stats").setExecutor(new StatsCommand(game, msg));
 
 		getCommand("team").setExecutor(teamExecutor);
@@ -48,6 +48,8 @@ public class ExcellentVARO extends JavaPlugin {
 
 		getCommand("start").setExecutor(gameExecutor);
 		getCommand("reset").setExecutor(gameExecutor);
+		getCommand("pause").setExecutor(gameExecutor);
+		getCommand("unpause").setExecutor(gameExecutor);
 		getCommand("varokill").setExecutor(gameExecutor);
 		getCommand("varorevive").setExecutor(gameExecutor);
 
@@ -55,7 +57,7 @@ public class ExcellentVARO extends JavaPlugin {
 	}
 
 	public void onDisable() {
-		config.saveTask.run();
+		cfg.saveTask.run();
 		saveConfig();
 	}
 	

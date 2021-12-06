@@ -9,6 +9,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
 
 import net.kreaverse.model.VaroGame;
 import net.kreaverse.model.VaroGame.GameState;
@@ -26,7 +27,7 @@ public class EntityDamageListener implements Listener {
 
 	@EventHandler
 	public void onEntityByEntityDamage(EntityDamageByEntityEvent e) {
-		if (game.state != GameState.ONGOING) {
+		if (game.paused || game.getState() != GameState.ONGOING) {
 			e.setCancelled(true);
 			return;
 		}
@@ -36,18 +37,20 @@ public class EntityDamageListener implements Listener {
 
 		Player victim = (Player) e.getEntity();
 		VaroPlayer vpVictim = game.getPlayerByUUID(victim.getUniqueId());
-		vpVictim.attacked(e.getEntity().getUniqueId());
+		vpVictim.setAttacker(e.getEntity().getUniqueId());
+
 		if (vpVictim == null || !vpVictim.alive) {
 			e.setCancelled(true);
 			return;
 		}
 
 		if (e.getDamager().getType() != EntityType.PLAYER) {
-			if (e.getFinalDamage() < victim.getHealth())
+			if (e.getFinalDamage() < victim.getHealth()) {
+				game.playerHPChange(victim, e.getFinalDamage());
 				return;
-
-			msg.broadcastDeath(victim.getName(), game.aliveCount - 1);
-			game.kill(victim);
+			}
+			msg.broadcastDeath(victim.getName(), game.aliveCount);
+			game.playerKill(victim);
 			e.setCancelled(true);
 			return;
 		}
@@ -60,24 +63,31 @@ public class EntityDamageListener implements Listener {
 			return;
 		}
 
-		vpVictim.attacked(vpAttacker.player);
-		vpAttacker.attacked(vpVictim.player);
-		vpAttacker.incrementStat((e.getCause() == DamageCause.PROJECTILE) ? "shotsLanded" : "attacksLanded", 1);
-		vpAttacker.incrementStat("damageDealt", e.getFinalDamage());
-		vpVictim.incrementStat("damageTaken", e.getFinalDamage());
+		game.playerHPChange(victim, e.getFinalDamage());
 
-		if (e.getFinalDamage() >= victim.getHealth()) {
-			int killCount = (int) vpAttacker.incrementStat("kills", 1);
-			msg.broadcastKill(attacker.getName(), victim.getName(), killCount, game.aliveCount - 1);
-			game.kill(victim);
+		vpVictim.setAttacker(vpAttacker.player);
+		vpAttacker.setAttacker(vpVictim.player);
+
+		vpAttacker.incrementStat((e.getCause() == DamageCause.PROJECTILE) ? "shotsLanded" : "attacksLanded", 1);
+		vpAttacker.incrementStat("shotsMissed", (e.getCause() == DamageCause.PROJECTILE) ? -1 : 0);
+
+		vpAttacker.incrementStat("damageDealtToPlayers", e.getFinalDamage());
+		vpVictim.incrementStat("damageTakenFromPlayers", e.getFinalDamage());
+
+		if (e.getFinalDamage() < victim.getHealth()) {
+			if (vpVictim.lastAttacker == null) {
+				msg.playerMessage(vpVictim.player,
+						"Du bist jetzt im Kampf, du darfst dich in den nächsten 30 Sekunden nicht ausloggen.",
+						ChatColor.RED);
+			}
 			return;
-		} else if (vpVictim.lastAttacker == null) {
-			msg.playerMessage(vpVictim.player,
-					"Du bist jetzt im Kampf, du darfst dich in den nächsten 30 Sekunden nicht ausloggen.",
-					ChatColor.RED);
 		}
 
-		vpVictim.attacked(vpAttacker.player);
+		int killCount = (int) vpAttacker.incrementStat("kills", 1);
+		msg.broadcastKill(attacker.getName(), victim.getName(), killCount, game.aliveCount);
+
+		game.playerKill(victim);
+		e.setCancelled(true);
 	}
 
 	@EventHandler
@@ -85,12 +95,7 @@ public class EntityDamageListener implements Listener {
 		if (e instanceof EntityDamageByEntityEvent)
 			return;
 
-		if (e.getCause() == DamageCause.VOID)
-			return;
-
-//		Bukkit.getLogger().log(Level.INFO, "Damage Not caused by Entity");
-
-		if (game.state != GameState.ONGOING) {
+		if (game.paused || game.getState() != GameState.ONGOING) {
 			e.setCancelled(true);
 			return;
 		}
@@ -106,6 +111,8 @@ public class EntityDamageListener implements Listener {
 			return;
 		}
 
+		game.playerHPChange(victim, e.getFinalDamage());
+
 		if (e.getFinalDamage() < victim.getHealth())
 			return;
 
@@ -113,11 +120,22 @@ public class EntityDamageListener implements Listener {
 			VaroPlayer vpAttacker = game.getPlayerByUUID(vpVictim.lastAttacker);
 			int killCount = (int) vpAttacker.incrementStat("kills", 1);
 			msg.broadcastKill(Bukkit.getOfflinePlayer(vpAttacker.player).getName(), victim.getName(), killCount,
-					game.aliveCount - 1);
+					game.aliveCount);
 
 		} else
 			msg.broadcastDeath(victim.getName(), game.aliveCount);
 
-		game.kill(victim);
+		game.playerKill(victim);
+		e.setCancelled(e.getCause() != DamageCause.VOID);
+	}
+
+	@EventHandler
+	public void onEntityRegainHealth(EntityRegainHealthEvent e) {
+		if (e.getEntityType() != EntityType.PLAYER) {
+			e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
+			return;
+		}
+		e.setCancelled(game.paused);
+		game.playerHPChange((Player) e.getEntity(), e.getAmount());
 	}
 }

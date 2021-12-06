@@ -1,7 +1,5 @@
 package net.kreaverse.tasks;
 
-import java.util.logging.Level;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -25,8 +23,11 @@ public class StartCountdown extends BukkitRunnable {
 
 	@Override
 	public void run() {
-		Bukkit.getLogger().log(Level.INFO, "Countdown Task Running, Counter: " + counter);
+//		Bukkit.getLogger().log(Level.INFO, "Countdown Task Running, Counter: " + counter);
 		if (counter == 0) {
+			game.updateState(GameState.ONGOING);
+			
+			msg.broadcast("Mögen die Spiele beginnen!", ChatColor.GREEN);
 			game.players.forEach(vp -> {
 				msg.playerTitle(vp.player, "START", ChatColor.GREEN, "Exzellenz-Varo hat begonnen!",
 						ChatColor.DARK_GREEN);
@@ -37,9 +38,7 @@ public class StartCountdown extends BukkitRunnable {
 				p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1, 1);
 				game.updatePlayer(p);
 			});
-			msg.broadcast("Mögen die Spiele beginnen!", ChatColor.GREEN);
-			game.state = GameState.ONGOING;
-			game.initIngameThreads();
+			
 			this.cancel();
 			return;
 		}
