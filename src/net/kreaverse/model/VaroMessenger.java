@@ -1,6 +1,8 @@
 package net.kreaverse.model;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -16,9 +18,16 @@ import net.kyori.adventure.title.Title.Times;
 
 public class VaroMessenger {
 
-	private String excellentVaro = ChatColor.GRAY + "[" + ChatColor.BLUE + "Excellent" + ChatColor.DARK_AQUA + "V"
-			+ ChatColor.AQUA + "A" + ChatColor.DARK_AQUA + "R" + ChatColor.AQUA + "O" + ChatColor.GRAY + "]"
-			+ ChatColor.DARK_GRAY + " >> " + ChatColor.WHITE;
+	private String formattedTime() {
+		return ChatColor.GRAY + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")) + " | "
+				+ ChatColor.WHITE;
+	}
+
+	private String formattedPrefix() {
+		return formattedTime() + ChatColor.GRAY + "[" + ChatColor.BLUE + "Excellent" + ChatColor.DARK_AQUA + "V"
+				+ ChatColor.AQUA + "A" + ChatColor.DARK_AQUA + "R" + ChatColor.AQUA + "O" + ChatColor.GRAY + "]"
+				+ ChatColor.DARK_GRAY + " >> " + ChatColor.WHITE;
+	}
 
 	public void playerTitle(UUID player, String top, ChatColor topColor, String bottom, ChatColor bottomColor) {
 		playerTitle(Bukkit.getPlayer(player), top, topColor, bottom, bottomColor);
@@ -28,6 +37,20 @@ public class VaroMessenger {
 		if (p == null)
 			return;
 		p.showTitle(Title.title(Component.text(topC + top), Component.text(bottomC + bottom)));
+	}
+
+	public void chatMessage(Player sender, Component msg) {
+		Bukkit.broadcast(Component.text(formattedTime() + ChatColor.GREEN + "SPIELER " + ChatColor.GOLD + sender.getName()
+				+ ChatColor.DARK_GRAY + " >> " + ChatColor.WHITE).append(msg));
+	}
+
+	public void spectatorMessage(Player sender, Player otherSpectator, Component msg) {
+		otherSpectator
+				.sendMessage(
+						Component
+								.text(formattedTime() + ChatColor.GRAY + "ZUSCHAUER " + ChatColor.LIGHT_PURPLE
+										+ sender.getName() + ChatColor.DARK_GRAY + " >> " + ChatColor.GRAY)
+								.append(msg));
 	}
 
 	public void pauseTitle(Player p, int minutes) {
@@ -45,7 +68,7 @@ public class VaroMessenger {
 	public void playerMessage(Player p, String message, ChatColor color) {
 		if (p == null)
 			return;
-		p.sendMessage(excellentVaro + color + message.replace("{name}", p.getName()));
+		p.sendMessage(formattedPrefix() + color + message.replace("{name}", p.getName()));
 	}
 
 	public void playerMessage(UUID player, String msg, ChatColor color) {
@@ -55,40 +78,44 @@ public class VaroMessenger {
 	public void broadcast(String msg, ChatColor color) {
 		Bukkit.getOnlinePlayers()
 				.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1));
-		Bukkit.broadcast(Component.text(excellentVaro + color + msg));
+
+		Bukkit.broadcast(Component.text(formattedPrefix() + color + msg));
 	}
 
 	public void broadcastDeath(String victim, long aliveCount) {
 		Bukkit.getOnlinePlayers()
 				.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1));
-		Bukkit.broadcast(Component.text(excellentVaro + ChatColor.RED + victim + " ist gestorben. Es leben noch "
+
+		Bukkit.broadcast(Component.text(formattedPrefix() + ChatColor.RED + victim + " ist gestorben. Es leben noch "
 				+ (aliveCount - 1) + " Spieler."));
 	}
 
 	public void broadcastRevive(String victim, long aliveCount) {
 		Bukkit.getOnlinePlayers()
 				.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1));
-		Bukkit.broadcast(Component.text(excellentVaro + ChatColor.LIGHT_PURPLE + victim
+
+		Bukkit.broadcast(Component.text(formattedPrefix() + ChatColor.LIGHT_PURPLE + victim
 				+ " wude wiederbelebt. Es leben jetzt wieder " + (aliveCount + 1) + " Spieler."));
 	}
 
 	public void broadcastKill(String attacker, String victim, long killCount, long aliveCount) {
 		Bukkit.getOnlinePlayers()
 				.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1));
-		Bukkit.broadcast(Component.text(excellentVaro + ChatColor.RED + victim + " wurde von " + attacker
+
+		Bukkit.broadcast(Component.text(formattedPrefix() + ChatColor.RED + victim + " wurde von " + attacker
 				+ " getötet. (" + killCount + ". Kill) Es leben noch " + (aliveCount - 1) + " Spieler."));
 	}
 
 	public void errorMessage(@NotNull CommandSender sender, String errorMessage) {
-		sender.sendMessage(excellentVaro + ChatColor.RED + "FEHLER: " + errorMessage);
+		sender.sendMessage(formattedPrefix() + ChatColor.RED + "FEHLER: " + errorMessage);
 	}
 
 	public void successMessage(@NotNull CommandSender sender, String successMessage) {
-		sender.sendMessage(excellentVaro + ChatColor.GREEN + successMessage);
+		sender.sendMessage(formattedPrefix() + ChatColor.GREEN + successMessage);
 	}
 
 	public void playerError(@NotNull Player player, String errorMessage) {
-		playerMessage(player, "FEHLER: " + errorMessage, ChatColor.RED);
+		playerMessage(player, " FEHLER: " + errorMessage, ChatColor.RED);
 	}
 
 	public void playerSuccess(@NotNull Player player, String successMessage) {

@@ -1,7 +1,9 @@
 package net.kreaverse.listeners;
 
 import java.util.List;
+import java.util.logging.Level;
 
+import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_18_R1.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -35,7 +37,8 @@ public class GlowHandler {
 		initPacketListener();
 	}
 
-	public void initiateTeamGlow(Player target, Player receiver) { // trigger the glow listener by resending the last metadata packet
+	public void initiateTeamGlow(Player target, Player receiver) { // trigger the glow listener by resending the last
+																	// metadata packet
 		PacketPlayOutEntityMetadata metadataPacket = new PacketPlayOutEntityMetadata(target.getEntityId(),
 				((CraftPlayer) target).getHandle().ai(), true); // deobf: getDataWatcher()
 
@@ -45,7 +48,7 @@ public class GlowHandler {
 
 	private void initPacketListener() {
 		ProtocolLibrary.getProtocolManager().addPacketListener(
-				new PacketAdapter(plugin, ListenerPriority.HIGHEST, PacketType.Play.Server.ENTITY_METADATA) {
+				new PacketAdapter(plugin, ListenerPriority.LOWEST, PacketType.Play.Server.ENTITY_METADATA) {
 					@Override
 					public void onPacketSending(PacketEvent event) {
 						PacketContainer packet = event.getPacket();
@@ -66,15 +69,14 @@ public class GlowHandler {
 								|| !glowTarget.getTeammate().equals(receiver.getUniqueId()));
 
 						if (!targetShouldGlow) {
-							try {
-								Thread.sleep(1);
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-							// Bukkit.getLogger().log(Level.INFO, targetShouldGlow + ": " + ((Player)
-							// entity).getName()
-							// + " -> " + receiver.getName());
+//							try {
+//								Thread.sleep(1);
+//							} catch (InterruptedException e) {
+//								// TODO Auto-generated catch block
+//								e.printStackTrace();
+//							}
+							Bukkit.getLogger().log(Level.INFO, targetShouldGlow + ": " + ((Player) entity).getName()
+									+ " -> " + receiver.getName());
 						}
 
 						List<DataWatcher.Item<?>> items = (List<Item<?>>) packet.getModifier().withType(List.class)

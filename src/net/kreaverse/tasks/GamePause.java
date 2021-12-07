@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.GameRule;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -55,20 +56,25 @@ public class GamePause extends BukkitRunnable {
 			world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
 			world.setGameRule(GameRule.DO_MOB_SPAWNING, true);
 			world.setGameRule(GameRule.DO_FIRE_TICK, true);
-			world.getWorldBorder().setSize(game.borderMinSize, Math.round(game.borderShrinkTime
-					* (world.getWorldBorder().getSize() - game.borderMinSize) / game.borderMaxSize));
+			if (pausedBorderSize < game.borderMaxSize) {
+				world.getWorldBorder().setSize(game.borderMinSize,
+						Math.round(60 * game.borderShrinkTime * (pausedBorderSize - game.borderMinSize)
+								/ Math.max(1, (game.borderMaxSize - game.borderMinSize))));
+			}
 		});
 		pausedEffects.forEach((player, effectList) -> {
 			player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
 			effectList.forEach(
 					effect -> player.addPotionEffect(new PotionEffect(effect.type, effect.duration, effect.strength)));
 		});
-		
+
 		Bukkit.getOnlinePlayers().forEach(player -> {
-			player.setAllowFlight(false);
+			if (player.getGameMode() != GameMode.CREATIVE || player.getGameMode() != GameMode.SPECTATOR) {
+				player.setAllowFlight(false);
+			}
 			player.clearTitle();
 		});
-		
+
 		try {
 			this.cancel();
 		} catch (IllegalStateException e) {
@@ -98,7 +104,9 @@ public class GamePause extends BukkitRunnable {
 			p.getActivePotionEffects().forEach(effect -> saved.add(new SavedPotion(effect)));
 			pausedEffects.put(p, saved);
 
-			p.setAllowFlight(true);
+			if (p.getGameMode() != GameMode.CREATIVE || p.getGameMode() != GameMode.SPECTATOR) {
+				p.setAllowFlight(false);
+			}
 			msg.pauseTitle(p, minutes);
 		});
 	}

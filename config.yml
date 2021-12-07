@@ -1,11 +1,29 @@
+# ExcellentVARO Configuration
+#
+# All configuration is made in the "defaults"-section, the other sections (game, players) just store data
+# Question: What do these Variables mean?
+#
+# Answer:
+# saveEveryMinutes: data saving interval, in minutes
+# playerRevives: amount of revives per player
+# borderMinSize: Starting Border Size in Blocks
+# borderMaxSize: Final Border Size in Blocks
+# borderShrinkTime: Time in Minutes that the Border takes to shrink
+# borderShrinkDelay: Delay in Minutes for the Border to start shrinking
+# borderWarningDistance: Distance to the Border when players should start being warned
+#
+# NOW GO AND HAVE FUN WITH MY PLUGIN! :D
+# - Kreavita
+
 defaults:
   saveEveryMinutes: 5
   playerRevives: 1
-  borderMinSize: 100
-  borderMaxSize: 1000
-  borderShrinkTime: 600
+  borderMinSize: 150
+  borderMaxSize: 2000
+  borderShrinkTime: 210
+  borderShrinkDelay: 30
   borderWarningDistance: 100
 game:
   state: 0
-  borderSize: 1000
+  borderSize: 0
 players:

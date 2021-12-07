@@ -60,12 +60,6 @@ public class PlayerInteractListener implements Listener {
 	}
 
 	@EventHandler
-	public void onPlayerMove(PlayerMoveEvent e) {
-		e.setCancelled(game.paused);
-		game.forceSpectate(e.getPlayer(), game.getPlayerByUUID(e.getPlayer().getUniqueId()));
-	}
-
-	@EventHandler
 	public void onPlayerItemDrop(PlayerDropItemEvent e) {
 		if (game.paused || game.getState() != GameState.ONGOING) {
 			e.setCancelled(true);
@@ -79,26 +73,47 @@ public class PlayerInteractListener implements Listener {
 	}
 
 	@EventHandler
-	public void onPlayerStopSpectating(PlayerStopSpectatingEntityEvent e) {
-		if (e.getSpectatorTarget().getType() != EntityType.PLAYER)
-			return;
+	public void onPlayerMove(PlayerMoveEvent e) {
+		e.setCancelled(game.paused);
 
-		if (game.getState() != GameState.ONGOING) {
-			return;
-		}
-
-		VaroPlayer vpTarget = game.getPlayerByUUID(((Player) e.getSpectatorTarget()).getUniqueId());
 		VaroPlayer vpSpectator = game.getPlayerByUUID(e.getPlayer().getUniqueId());
 
-		if (vpSpectator == null || vpTarget == null || vpSpectator.alive || vpSpectator.getTeammate() == null
+		if (vpSpectator == null || vpSpectator.alive || vpSpectator.getTeammate() == null
 				|| Bukkit.getPlayer(vpSpectator.getTeammate()) == null)
 			return;
 
-		if (vpSpectator.getTeammate().equals(vpTarget.player) && vpTarget.alive) {
-			e.setCancelled(true);
+		VaroPlayer vpTarget = game.getPlayerByUUID(vpSpectator.getTeammate());
+
+		if (vpTarget == null || !vpTarget.alive)
+			return;
+
+		e.setCancelled(true);
+		game.forceSpectate(e.getPlayer(), vpTarget);
+
+	}
+
+	@EventHandler
+	public void onPlayerStopSpectating(PlayerStopSpectatingEntityEvent e) {
+		if (e.getSpectatorTarget().getType() != EntityType.PLAYER || game.getState() != GameState.ONGOING)
+			return;
+
+		VaroPlayer vpSpectator = game.getPlayerByUUID(e.getPlayer().getUniqueId());
+
+		if (vpSpectator == null || vpSpectator.alive || vpSpectator.getTeammate() == null
+				|| Bukkit.getPlayer(vpSpectator.getTeammate()) == null)
+			return;
+
+		VaroPlayer vpTarget = game.getPlayerByUUID(vpSpectator.getTeammate());
+
+		if (vpTarget == null || !vpTarget.alive)
+			return;
+
+		e.setCancelled(true);
+
+		if (vpTarget.player.equals(((Player) e.getSpectatorTarget()).getUniqueId())) {
 			return;
 		}
-
+		
 		game.forceSpectate(e.getPlayer(), vpTarget);
 	}
 }

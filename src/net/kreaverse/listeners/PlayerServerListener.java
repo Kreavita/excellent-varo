@@ -1,9 +1,13 @@
 package net.kreaverse.listeners;
 
+import java.util.logging.Level;
+
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -48,19 +52,52 @@ public class PlayerServerListener implements Listener {
 
 	@EventHandler
 	public void onPlayerMessage(AsyncChatEvent e) {
-		if (game.getState() != GameState.ONGOING)
+		e.setCancelled(true);
+
+		if (game.paused)
 			return;
 
-		Player p = e.getPlayer();
-		VaroPlayer vp = game.getPlayerByUUID(p.getUniqueId());
-
-		if (vp == null || vp.alive)
-			return;
+		Player sender = e.getPlayer();
+		VaroPlayer vpSender = game.getPlayerByUUID(sender.getUniqueId());
 
 		String message = PlainTextComponentSerializer.plainText().serialize(e.message());
-		if (message.strip().charAt(0) != '/') {
-			e.setCancelled(true);
-			msg.playerError(e.getPlayer(), "Du darfst als Zuschauer nicht chatten.");
+		Bukkit.getLogger().log(Level.INFO, "Spectator Message: <" + sender.getName() + ">" + message);
+
+		if (game.getState() == GameState.ONGOING && (vpSender == null || !vpSender.alive)) {
+			Bukkit.getOnlinePlayers().forEach(receiver -> {
+
+				VaroPlayer vpReceiver = game.getPlayerByUUID(sender.getUniqueId());
+
+				if (vpReceiver != null && vpReceiver.alive) {
+					return;
+				}
+
+				msg.spectatorMessage(sender, receiver, e.message());
+			});
+			return;
+		}
+
+		msg.chatMessage(sender, e.message());
+	}
+
+	private String[] pmPrefixes = { "/msg ", "/tell ", "/r ", "/whisper ", "/w ", "/me " };
+
+	@EventHandler
+	public void onPlayerCommand(PlayerCommandPreprocessEvent e) {
+
+		VaroPlayer vp = game.getPlayerByUUID(e.getPlayer().getUniqueId());
+
+		if (e.getPlayer().isOp() || vp != null && vp.alive) {
+			return;
+		}
+
+		for (String s : pmPrefixes) {
+			if (e.getMessage().strip().startsWith(s)) {
+				e.setCancelled(true);
+				msg.playerError(e.getPlayer(), "Du bist tot und darfst diesen Command nicht nutzen!");
+				return;
+			}
 		}
 	}
+
 }

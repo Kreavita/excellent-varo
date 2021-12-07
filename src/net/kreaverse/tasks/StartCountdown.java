@@ -27,6 +27,7 @@ public class StartCountdown extends BukkitRunnable {
 	public void run() {
 //		Bukkit.getLogger().log(Level.INFO, "Countdown Task Running, Counter: " + counter);
 		if (counter == 0) {
+			game.shrinkDelayed = true;
 			game.updateState(GameState.ONGOING);
 
 			msg.broadcast("Mögen die Spiele beginnen!", ChatColor.GREEN);
@@ -41,6 +42,11 @@ public class StartCountdown extends BukkitRunnable {
 				game.playerClear(p);
 				game.updatePlayer(p);
 			});
+
+			if (game.borderShrinkDelay > 0) {
+				msg.broadcast("Die Border beginnt in " + game.borderShrinkDelay + " Minuten zu schrumpfen!",
+						ChatColor.LIGHT_PURPLE);
+			}
 
 			this.cancel();
 			return;

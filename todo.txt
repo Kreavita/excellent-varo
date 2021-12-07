@@ -1,6 +1,5 @@
 DONE AttacksMissed, ShotsMissed nur tracken wenn in Combat
 DONE Team Commands => Zweierteams
-DONE Team Glow Testen
 DONE tränke restoren fixen
 DONE init state spawnt alle am spawn
 DONE kein End
@@ -9,12 +8,17 @@ DONE Keine Advancements broadcasten, Mob Spawn mit gamerule
 DONE Revive Mechanic mit OP Apfel / Wither Skull
 DONE XP Drop & XP reset fixen
 DONE unterwasser bubbles fixen
-DONE border warnung bei <100 blöcken
+DONE border warnung bei <100 blöcken (Actionbar)
+DONE border-delay: announcement, config, implementation, pausable
+DONE fancy chat nachrichten, whisper commands für spectators blocken
 
 TESTING spectator mode: wenn der alive teammate stirbt -> leaven
 
+immersive spectator mode => TOM
+config guide
 
+Eher nicht:
 Replay Mod? Eher nicht
 Anticheat? Eher nicht
-map regeneration?
-immersive spectator mode
+map regeneration? Eher nicht
+Team Glow Fixen => Minecraft 1.18 Suckt noch

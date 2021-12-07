@@ -21,8 +21,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import net.kreaverse.ExcellentVARO;
-import net.kreaverse.listeners.GlowHandler;
 import net.kreaverse.tasks.ActionbarUpdater;
+import net.kreaverse.tasks.BorderShrinkDelay;
 import net.kreaverse.tasks.FightTracker;
 import net.kreaverse.tasks.GamePause;
 import net.kreaverse.tasks.ScoreboardUpdater;
@@ -55,17 +55,19 @@ public class VaroGame {
 	public ArrayList<VaroPlayer> players;
 	public long aliveCount;
 
-	public float borderMinSize;
-	public float borderMaxSize;
-	public float borderShrinkTime;
+	public double borderMinSize;
+	public double borderMaxSize;
+	public double borderShrinkTime; // Minutes
+	public int borderShrinkDelay; // Minutes
 
 	public boolean paused = false;
+	public boolean shrinkDelayed = false;
 
 	private GameState state;
 
 	private ExcellentVARO plugin;
 	private VaroMessenger msg;
-	public GlowHandler gh;
+//	public GlowHandler gh;
 
 	private HashMap<String, BukkitRunnable> timerThreads;
 	private ScoreboardUpdater scoreboardUpdater;
@@ -81,11 +83,12 @@ public class VaroGame {
 		borderMaxSize = plugin.getConfig().getInt("defaults.borderMaxSize");
 		borderMinSize = plugin.getConfig().getInt("defaults.borderMinSize");
 		borderShrinkTime = plugin.getConfig().getInt("defaults.borderShrinkTime");
+		borderShrinkDelay = plugin.getConfig().getInt("defaults.borderShrinkDelay");
 
 		players = cfg.loadPlayers();
 		timerThreads = new HashMap<String, BukkitRunnable>();
 
-		gh = new GlowHandler(this, plugin);
+//		gh = new GlowHandler(this, plugin);
 
 		int savedBorderSize = plugin.getConfig().getInt("game.borderSize");
 		Bukkit.getServer().getWorlds().forEach(world -> {
@@ -143,8 +146,6 @@ public class VaroGame {
 				world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
 				world.setGameRule(GameRule.DO_MOB_SPAWNING, true);
 				world.setGameRule(GameRule.DO_FIRE_TICK, true);
-				world.getWorldBorder().setSize(borderMinSize, Math
-						.round(borderShrinkTime * (world.getWorldBorder().getSize() - borderMinSize) / borderMaxSize));
 			});
 			initIngameThreads();
 			break;
@@ -203,6 +204,10 @@ public class VaroGame {
 	}
 
 	private void initIngameThreads() {
+		(new BorderShrinkDelay(this, msg, Bukkit.getServer().getWorlds(), shrinkDelayed ? borderShrinkDelay : 0))
+				.runTaskTimer(plugin, 20, 1200);
+		;
+
 		if (timerThreads.get("fightTracker") != null) {
 			try {
 				timerThreads.get("fightTracker").cancel();
@@ -322,16 +327,18 @@ public class VaroGame {
 
 			if (vp.getTeammate() != null)
 				forceSpectate(p, getPlayerByUUID(vp.getTeammate()));
+		} else if (vp.getTeammate() != null && Bukkit.getPlayer(vp.getTeammate()) != null) {
+			forceSpectate(Bukkit.getPlayer(vp.getTeammate()), vp);
 		}
 		scoreboardUpdater.run();
 		return vp;
 	}
 
 	public void updateTeamGlow(Player p1, Player p2) {
-		if (p1 != null)
-			gh.initiateTeamGlow(p1, p2);
-		if (p2 != null)
-			gh.initiateTeamGlow(p2, p1);
+//		if (p1 != null)
+//			gh.initiateTeamGlow(p1, p2);
+//		if (p2 != null)
+//			gh.initiateTeamGlow(p2, p1);
 	}
 
 	public void playerHPChange(Player p, double damage) {
@@ -451,6 +458,11 @@ public class VaroGame {
 
 		if (teammate == null)
 			return; // Teammate is offline
+
+		if (spectator.getSpectatorTarget().equals(teammate)) {
+			Bukkit.getLogger().log(Level.INFO, "Player already spectating the target, returning...");
+			return;
+		}
 
 		msg.playerMessage(spectator, "Da dein Teammate noch lebt, kannst du nicht frei zuschauen!",
 				ChatColor.LIGHT_PURPLE);
