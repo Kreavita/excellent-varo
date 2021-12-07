@@ -13,6 +13,7 @@ import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.Statistic;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
@@ -21,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 
 import net.kreaverse.ExcellentVARO;
 import net.kreaverse.listeners.GlowHandler;
+import net.kreaverse.tasks.ActionbarUpdater;
 import net.kreaverse.tasks.FightTracker;
 import net.kreaverse.tasks.GamePause;
 import net.kreaverse.tasks.ScoreboardUpdater;
@@ -93,6 +95,9 @@ public class VaroGame {
 			world.setGameRule(GameRule.SPECTATORS_GENERATE_CHUNKS, false);
 			world.getWorldBorder().setSize(savedBorderSize);
 		});
+
+		int borderWarningBlocks = plugin.getConfig().getInt("defaults.borderWarningDistance");
+		(new ActionbarUpdater(this, borderWarningBlocks)).runTaskTimer(plugin, 1L, 1L);
 
 		updateState(GameState.fromInt(plugin.getConfig().getInt("game.state")));
 	}
@@ -226,11 +231,11 @@ public class VaroGame {
 		timerThreads.put("startCountdown", new StartCountdown(plugin, msg, countdown));
 	}
 
-	public void pause(int duration, String name) {
+	public void pause(int duration, CommandSender p) {
 		if (paused)
 			return;
 
-		msg.broadcast(name + " hat das Spiel wird für " + duration
+		msg.broadcast(p.getName() + " hat das Spiel wird für " + duration
 				+ " Minuten pausiert! Benutze '/unpause' um die Pause abzubrechen", ChatColor.YELLOW);
 
 		if (timerThreads.get("pauseTimer") != null) {
@@ -244,27 +249,25 @@ public class VaroGame {
 		timerThreads.put("pauseTimer", new GamePause(plugin, msg, duration));
 	}
 
-	public void resume(String name) {
+	public void resume(CommandSender p) {
 		if (!paused)
 			return;
 
-		if (timerThreads.get("pauseTimer") == null
-				|| (timerThreads.get("resumeTimer") != null && !timerThreads.get("resumeTimer").isCancelled()))
+		if (timerThreads.get("pauseTimer") == null || timerThreads.get("resumeTimer") != null) {
+			msg.errorMessage(p, "Das Spiel wird bereits fortgesetzt.");
 			return;
+		}
 
-		msg.broadcast(name + " hebt die Pause auf. Das Spiel wird in 5 Sekunden fortgesetzt...", ChatColor.YELLOW);
-		Bukkit.getServer().getWorlds().forEach(world -> world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true));
+		msg.broadcast(p.getName() + " hebt die Pause auf. Das Spiel wird in 5 Sekunden fortgesetzt...",
+				ChatColor.YELLOW);
 
 		timerThreads.put("resumeTimer", new BukkitRunnable() {
 			@Override
 			public void run() {
 				timerThreads.get("pauseTimer").run();
-				try {
-					timerThreads.get("pauseTimer").cancel();
-				} catch (IllegalStateException e) {
-					plugin.getLogger().log(Level.INFO, "pauseTimer couldn't be cancelled");
-				}
-				timerThreads.replace("pauseTimer", null);
+				this.cancel();
+				timerThreads.put("resumeTimer", null);
+				msg.broadcast("Das Spiel geht weiter!", ChatColor.GREEN);
 			}
 		});
 		timerThreads.get("resumeTimer").runTaskLater(plugin, 20L * 5);
@@ -290,7 +293,7 @@ public class VaroGame {
 			}
 
 			Bukkit.getOnlinePlayers()
-					.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 0.5f, 1));
+					.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1f, 1));
 
 			broadcastMessage = broadcastMessage.substring(0, broadcastMessage.length() - 1) + ".";
 		} else {

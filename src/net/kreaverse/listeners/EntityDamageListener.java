@@ -65,6 +65,18 @@ public class EntityDamageListener implements Listener {
 
 		game.playerHPChange(victim, e.getFinalDamage());
 
+		if (vpVictim.lastAttacker == null) {
+			msg.playerMessage(victim,
+					"Du befindest dich jetzt im Kampf, in den nächsten 30 Sekunden darfst du dich nicht ausloggen!",
+					ChatColor.YELLOW);
+		}
+
+		if (vpAttacker.lastAttacker == null) {
+			msg.playerMessage(attacker,
+					"Du befindest dich jetzt im Kampf, in den nächsten 30 Sekunden darfst du dich nicht ausloggen!",
+					ChatColor.YELLOW);
+		}
+
 		vpVictim.setAttacker(vpAttacker.player);
 		vpAttacker.setAttacker(vpVictim.player);
 

@@ -45,7 +45,7 @@ public class GlowHandler {
 
 	private void initPacketListener() {
 		ProtocolLibrary.getProtocolManager().addPacketListener(
-				new PacketAdapter(plugin, ListenerPriority.NORMAL, PacketType.Play.Server.ENTITY_METADATA) {
+				new PacketAdapter(plugin, ListenerPriority.HIGHEST, PacketType.Play.Server.ENTITY_METADATA) {
 					@Override
 					public void onPacketSending(PacketEvent event) {
 						PacketContainer packet = event.getPacket();

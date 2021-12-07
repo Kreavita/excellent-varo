@@ -8,8 +8,13 @@ DONE Leaven nur nach 30s ohne damage
 DONE Keine Advancements broadcasten, Mob Spawn mit gamerule
 DONE Revive Mechanic mit OP Apfel / Wither Skull
 DONE XP Drop & XP reset fixen
-unterwasser bubbles fixen
-spectator mode: wenn der alive teammate stirbt -> leaven
+DONE unterwasser bubbles fixen
+DONE border warnung bei <100 blöcken
+
+TESTING spectator mode: wenn der alive teammate stirbt -> leaven
+
+
+Replay Mod? Eher nicht
+Anticheat? Eher nicht
+map regeneration?
 immersive spectator mode
-Replay Mod Einrichten
-Anticheat?

@@ -4,6 +4,7 @@ defaults:
   borderMinSize: 100
   borderMaxSize: 1000
   borderShrinkTime: 600
+  borderWarningDistance: 100
 game:
   state: 0
   borderSize: 1000

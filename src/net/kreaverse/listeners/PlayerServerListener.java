@@ -27,6 +27,7 @@ public class PlayerServerListener implements Listener {
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent e) {
 		VaroPlayer vp = game.playerJoin(e.getPlayer());
+		e.getPlayer().clearTitle();
 		e.joinMessage(e.joinMessage().append(Component.text((vp.alive) ? " (als Spieler)" : " (als Zuschauer)")));
 	}
 

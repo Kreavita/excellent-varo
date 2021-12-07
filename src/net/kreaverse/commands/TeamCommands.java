@@ -45,6 +45,16 @@ public class TeamCommands implements CommandExecutor {
 
 		switch (command.getName()) {
 		case "team":
+			if (args.length == 0) {
+				msg.errorMessage(p, "Du musst einen Spielernamen angeben");
+				return false;
+			}
+
+			if (args[0].strip().equals(p.getName())) {
+				msg.errorMessage(p, "Du darfst dir nicht selber eine Teamanfrage schicken");
+				return true;
+			}
+
 			if (game.getState() != GameState.IDLE) {
 				msg.errorMessage(p, "Du kannst kein neues Teammitglied festlegen, das Spiel hat bereits begonnen.");
 				return true;
@@ -53,11 +63,6 @@ public class TeamCommands implements CommandExecutor {
 			if (vp.getTeammate() != null) {
 				msg.errorMessage(p, "Du bist bereits in einem Team, steige aus deinem Team aus mit '/unteam'.");
 				return true;
-			}
-
-			if (args.length == 0) {
-				msg.errorMessage(p, "Du musst einen Spielernamen angeben");
-				return false;
 			}
 
 			Player recipient = Bukkit.getPlayer(args[0]);

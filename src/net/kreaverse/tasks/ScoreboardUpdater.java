@@ -50,6 +50,11 @@ public class ScoreboardUpdater extends BukkitRunnable {
 		varo.displayName(Component.text("§u§l§7[§9Excellent§3V§bA§3R§bO§7]"));
 		varo.setDisplaySlot(DisplaySlot.SIDEBAR);
 
+		if (game.paused) {
+			varo.getScore("      ").setScore(102);
+			varo.getScore("§e§l SPIEL PAUSIERT").setScore(101);
+		}
+		
 		varo.getScore("     ").setScore(100);
 		String stateStr;
 		switch (game.getState()) {
@@ -85,8 +90,10 @@ public class ScoreboardUpdater extends BukkitRunnable {
 			if (vpTeammate != null) {
 				String tmHealth = (Bukkit.getPlayer(tm) == null) ? "LEBENDIG"
 						: Math.max(0, Math.round(Bukkit.getPlayer(tm).getHealth() - tmDamage) / 2f) + " HP";
-				varo.getScore(" §l§u§g" + Bukkit.getOfflinePlayer(tm).getName() + ": "
-						+ ((vpTeammate.alive) ? "§a§l" + tmHealth : "§c§lTOT")).setScore(69);
+				varo.getScore(" §l§u§g" + Bukkit.getOfflinePlayer(tm).getName() != null
+						? Bukkit.getOfflinePlayer(tm).getName()
+						: "Teammate offline" + ": " + ((vpTeammate.alive) ? "§a§l" + tmHealth : "§c§lTOT"))
+						.setScore(69);
 				varo.getScore(" Kills: §2§l" + Math.round(vpTeammate.stats.get("kills")) + " ").setScore(68);
 				varo.getScore(" Leben: §a§l" + vpTeammate.revivesLeft + " ").setScore(67);
 				varo.getScore(" ").setScore(60);

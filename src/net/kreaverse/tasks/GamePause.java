@@ -2,6 +2,7 @@ package net.kreaverse.tasks;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
@@ -41,7 +42,9 @@ public class GamePause extends BukkitRunnable {
 		this.game = plugin.getGame();
 		this.msg = msg;
 		pausedEffects = new HashMap<Player, ArrayList<SavedPotion>>();
+
 		pause(minutes);
+
 		this.runTaskLater(plugin, 1200L * minutes);
 	}
 
@@ -59,9 +62,18 @@ public class GamePause extends BukkitRunnable {
 			player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
 			effectList.forEach(
 					effect -> player.addPotionEffect(new PotionEffect(effect.type, effect.duration, effect.strength)));
+		});
+		
+		Bukkit.getOnlinePlayers().forEach(player -> {
 			player.setAllowFlight(false);
 			player.clearTitle();
 		});
+		
+		try {
+			this.cancel();
+		} catch (IllegalStateException e) {
+			Bukkit.getLogger().log(Level.INFO, "pauseTimer couldn't be cancelled");
+		}
 	}
 
 	private void pause(int minutes) {
@@ -74,6 +86,9 @@ public class GamePause extends BukkitRunnable {
 			pausedBorderSize = world.getWorldBorder().getSize();
 			world.getWorldBorder().setSize(pausedBorderSize);
 		});
+
+		pausedEffects.clear();
+
 		game.players.forEach(vp -> {
 			if (!vp.alive || Bukkit.getPlayer(vp.player) == null)
 				return;

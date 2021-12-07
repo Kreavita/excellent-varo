@@ -44,7 +44,7 @@ public class GameCommands implements CommandExecutor {
 					Bukkit.getLogger().log(Level.WARNING, "Pause Command wurde mit ungültigem Integerwert aufgerufen!");
 				}
 			}
-			game.pause(counter, sender.getName());
+			game.pause(counter, sender);
 			return true;
 		}
 		if (command.getName().strip().equalsIgnoreCase("unpause")) {
@@ -56,7 +56,7 @@ public class GameCommands implements CommandExecutor {
 				msg.errorMessage(sender, "Das Spiel ist nicht pausiert.");
 				return true;
 			}
-			game.resume(sender.getName());
+			game.resume(sender);
 			return true;
 		}
 		return false;

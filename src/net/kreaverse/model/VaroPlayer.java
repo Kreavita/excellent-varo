@@ -18,6 +18,7 @@ public class VaroPlayer {
 
 	public VaroPlayer(UUID p, int playerRevives) {
 		player = p;
+		teammate = null;
 
 		alive = true;
 		revivesLeft = playerRevives;

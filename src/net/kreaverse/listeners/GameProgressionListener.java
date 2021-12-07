@@ -2,6 +2,7 @@ package net.kreaverse.listeners;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityAirChangeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -44,6 +45,13 @@ public class GameProgressionListener implements Listener {
 	@EventHandler
 	public void onFoodLevelChange(FoodLevelChangeEvent e) {
 		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
+
+	}
+
+	@EventHandler
+	public void onAirLevelChange(EntityAirChangeEvent e) {
+		e.setCancelled(game.paused || game.getState() != GameState.ONGOING);
+
 	}
 
 	@EventHandler
