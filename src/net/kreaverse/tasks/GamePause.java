@@ -69,7 +69,9 @@ public class GamePause extends BukkitRunnable {
 		});
 
 		Bukkit.getOnlinePlayers().forEach(player -> {
-			player.setAllowFlight(false);
+			if (player.getGameMode() != GameMode.CREATIVE && player.getGameMode() != GameMode.SPECTATOR) {
+				player.setAllowFlight(false);
+			}
 			player.clearTitle();
 		});
 
@@ -102,9 +104,7 @@ public class GamePause extends BukkitRunnable {
 			p.getActivePotionEffects().forEach(effect -> saved.add(new SavedPotion(effect)));
 			pausedEffects.put(p, saved);
 
-			if (p.getGameMode() != GameMode.CREATIVE && p.getGameMode() != GameMode.SPECTATOR) {
-				p.setAllowFlight(false);
-			}
+			p.setAllowFlight(true);
 			msg.pauseTitle(p, minutes);
 		});
 	}
