@@ -41,9 +41,11 @@ public class BorderShrinkDelay extends BukkitRunnable {
 		if (timer <= 0) {
 			worlds.forEach(world -> {
 				currentSize = world.getWorldBorder().getSize();
-				shrinkTime = Math.round(60 * game.borderShrinkTime * (currentSize - game.borderMinSize)
-						/ Math.max(1, (game.borderMaxSize - game.borderMinSize)));
-				world.getWorldBorder().setSize(game.borderMinSize, shrinkTime);
+				if (currentSize > game.borderMinSize) {
+					shrinkTime = Math.round(60 * game.borderShrinkTime * (currentSize - game.borderMinSize)
+							/ Math.max(1, (game.borderMaxSize - game.borderMinSize)));
+					world.getWorldBorder().setSize(game.borderMinSize, shrinkTime);
+				}
 			});
 
 			if (currentSize > game.borderMinSize) {

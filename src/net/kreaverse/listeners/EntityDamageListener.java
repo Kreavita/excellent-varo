@@ -37,7 +37,6 @@ public class EntityDamageListener implements Listener {
 
 		Player victim = (Player) e.getEntity();
 		VaroPlayer vpVictim = game.getPlayerByUUID(victim.getUniqueId());
-		vpVictim.setAttacker(e.getEntity().getUniqueId());
 
 		if (vpVictim == null || !vpVictim.alive) {
 			e.setCancelled(true);
