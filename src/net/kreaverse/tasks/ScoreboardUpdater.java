@@ -59,10 +59,10 @@ public class ScoreboardUpdater extends BukkitRunnable {
 		String stateStr;
 		switch (game.getState()) {
 		case FINISHED:
-			stateStr = "§2§lBEENDET";
+			stateStr = "§2§Beendet";
 			break;
 		case ONGOING:
-			stateStr = "§c§lLAUFENDES SPIEL";
+			stateStr = "§c§lSPIEL LÄUFT";
 			break;
 		default:
 			stateStr = "§7§lVorbereitung";

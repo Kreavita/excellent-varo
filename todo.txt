@@ -11,6 +11,8 @@ DONE unterwasser bubbles fixen
 DONE border warnung bei <100 blöcken (Actionbar)
 DONE border-delay: announcement, config, implementation, pausable
 DONE fancy chat nachrichten, whisper commands für spectators blocken
+DONE teamglow fix testen
+DONE spectator mode fixen wenn spectated teammate stirbt/revived wird (wenn tm leaved oder nicht online => kick)
 
 TESTING spectator mode: wenn der alive teammate stirbt -> leaven
 

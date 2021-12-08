@@ -68,16 +68,14 @@ public class GlowHandler {
 						boolean targetShouldGlow = !(glowTarget == null || glowTarget.getTeammate() == null
 								|| !glowTarget.getTeammate().equals(receiver.getUniqueId()));
 
-						if (!targetShouldGlow) {
-//							try {
-//								Thread.sleep(1);
-//							} catch (InterruptedException e) {
-//								// TODO Auto-generated catch block
-//								e.printStackTrace();
-//							}
-							Bukkit.getLogger().log(Level.INFO, targetShouldGlow + ": " + ((Player) entity).getName()
-									+ " -> " + receiver.getName());
+						if (targetShouldGlow) {
+//							Bukkit.getLogger().log(Level.INFO, targetShouldGlow + ": " + ((Player) entity).getName()
+//									+ " -> " + receiver.getName());
 						}
+						
+
+						packet = packet.deepClone();
+						event.setPacket(packet);
 
 						List<DataWatcher.Item<?>> items = (List<Item<?>>) packet.getModifier().withType(List.class)
 								.read(0);
@@ -89,6 +87,7 @@ public class GlowHandler {
 
 						byte byteMask = (byte) item.b();
 						item.a((byte) (targetShouldGlow ? (byteMask | 1 << 6) : (byteMask & ~(1 << 6))));
+
 					}
 				});
 	}

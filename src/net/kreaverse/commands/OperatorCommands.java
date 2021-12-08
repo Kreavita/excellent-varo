@@ -4,6 +4,7 @@ import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -31,6 +32,7 @@ public class OperatorCommands implements CommandExecutor {
 	public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
 			@NotNull String[] args) {
 		Player p;
+		OfflinePlayer op;
 		VaroPlayer vp;
 		int counter;
 
@@ -75,14 +77,20 @@ public class OperatorCommands implements CommandExecutor {
 				msg.errorMessage(sender, "Es läuft gerade kein Spiel.");
 				return true;
 			}
+			op = Bukkit.getOfflinePlayer(args[0].strip());
 
-			vp = game.getPlayerByUUID(Bukkit.getOfflinePlayer(args[0].strip()).getUniqueId());
-			if (vp == null || !vp.alive) {
-				msg.errorMessage(sender, "Dieser Spieler existiert nicht oder ist bereits tot.");
+			vp = game.getPlayerByUUID(op.getUniqueId());
+			if (vp == null) {
+				msg.errorMessage(sender, "Dieser Spieler existiert nicht.");
+				return true;
+			}
+			
+			if (!vp.alive) {
+				msg.errorMessage(sender, "Dieser Spieler ist bereits tot.");
 				return true;
 			}
 
-			msg.broadcastDeath(Bukkit.getOfflinePlayer(args[0].strip()).getName(), game.aliveCount);
+			msg.broadcastDeath(op.getName(), game.aliveCount);
 
 			p = Bukkit.getPlayer(args[0]);
 			if (p != null) {
@@ -90,7 +98,7 @@ public class OperatorCommands implements CommandExecutor {
 			} else {
 				game.playerKill(vp);
 			}
-			msg.successMessage(sender, p.getName() + " wurde getötet.");
+			msg.successMessage(sender, op.getName() + " wurde getötet.");
 			return true;
 
 		case "varorevive":
@@ -103,29 +111,36 @@ public class OperatorCommands implements CommandExecutor {
 				msg.errorMessage(sender, "Die Anzahl der Argumente stimmt nicht.");
 				return false;
 			}
+			op = Bukkit.getOfflinePlayer(args[0]);
 
-			vp = game.getPlayerByUUID(Bukkit.getOfflinePlayer(args[0]).getUniqueId());
+			vp = game.getPlayerByUUID(op.getUniqueId());
+			if (vp == null) {
+				msg.errorMessage(sender, "Dieser Spieler existiert nicht.");
+				return true;
+			}
+			
 			if (vp.alive) {
 				msg.errorMessage(sender, "Dieser Spieler ist bereits am Leben.");
 				return true;
 			}
 
+			msg.broadcastRevive(op.getName(), game.aliveCount);
+
 			p = Bukkit.getPlayer(args[0]);
-			msg.broadcastRevive(Bukkit.getOfflinePlayer(args[0].strip()).getName(), game.aliveCount);
 			if (p != null) {
 				game.playerRevive(p);
 			} else {
 				game.playerRevive(vp);
 			}
 
-			msg.successMessage(sender, p.getName() + " wurde wiederbelebt.");
+			msg.successMessage(sender, op.getName() + " wurde wiederbelebt.");
 			return true;
 
 		case "saveconfig":
 			plugin.saveConfig();
 			msg.successMessage(sender, "Das Spiel wurde gespeichert.");
 			return true;
-			
+
 		default:
 			return false;
 		}

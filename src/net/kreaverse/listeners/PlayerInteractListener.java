@@ -1,5 +1,8 @@
 package net.kreaverse.listeners;
 
+import java.util.UUID;
+import java.util.logging.Level;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -11,6 +14,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
 import com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent;
+import com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent;
 import com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent;
 
 import net.kreaverse.model.VaroGame;
@@ -75,45 +79,68 @@ public class PlayerInteractListener implements Listener {
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent e) {
 		e.setCancelled(game.paused);
+	}
+
+	@EventHandler
+	public void onPlayerStartSpectating(PlayerStartSpectatingEntityEvent e) {
+		if (game.getState() != GameState.ONGOING)
+			return; // allowed, when game is not ongoing
 
 		VaroPlayer vpSpectator = game.getPlayerByUUID(e.getPlayer().getUniqueId());
 
-		if (vpSpectator == null || vpSpectator.alive || vpSpectator.getTeammate() == null
-				|| Bukkit.getPlayer(vpSpectator.getTeammate()) == null)
-			return;
+		if (vpSpectator == null || vpSpectator.alive || vpSpectator.getTeammate() == null)
+			return; // allowed, when event source player is not playing, alive or has no teammate
 
-		VaroPlayer vpTarget = game.getPlayerByUUID(vpSpectator.getTeammate());
+		VaroPlayer vpTeammate = game.getPlayerByUUID(vpSpectator.getTeammate());
 
-		if (vpTarget == null || !vpTarget.alive)
+		if (vpTeammate == null || !vpTeammate.alive)
+			return; // allowed, when teammate does not exist or teammate dead too
+
+		if (Bukkit.getPlayer(e.getCurrentSpectatorTarget().getUniqueId()) == null) {
+			return; // this should never happen in the current implementation
+		}
+
+		if (e.getNewSpectatorTarget().getType() != EntityType.PLAYER) {
+			e.setCancelled(true); // cancelled when spectating mobs
 			return;
+		}
+
+		UUID targetUUID = ((Player) e.getNewSpectatorTarget()).getUniqueId();
+
+		if (targetUUID != null && targetUUID.equals(vpTeammate.player))
+			return; // allowed when target player is the teammate
 
 		e.setCancelled(true);
-		game.forceSpectate(e.getPlayer(), vpTarget);
-
 	}
 
 	@EventHandler
 	public void onPlayerStopSpectating(PlayerStopSpectatingEntityEvent e) {
 		if (e.getSpectatorTarget().getType() != EntityType.PLAYER || game.getState() != GameState.ONGOING)
-			return;
+			return; // allowed when current target is not a player or game is not running
 
 		VaroPlayer vpSpectator = game.getPlayerByUUID(e.getPlayer().getUniqueId());
 
-		if (vpSpectator == null || vpSpectator.alive || vpSpectator.getTeammate() == null
-				|| Bukkit.getPlayer(vpSpectator.getTeammate()) == null)
-			return;
+		if (vpSpectator == null || vpSpectator.alive || vpSpectator.getTeammate() == null)
+			return; // allowed, when event source player is not playing, alive or has no teammate
 
-		VaroPlayer vpTarget = game.getPlayerByUUID(vpSpectator.getTeammate());
+		VaroPlayer vpTeammate = game.getPlayerByUUID(vpSpectator.getTeammate());
 
-		if (vpTarget == null || !vpTarget.alive)
-			return;
+		if (vpTeammate == null || !vpTeammate.alive)
+			return; // allowed, when teammate does not exist or teammate dead too
 
-		e.setCancelled(true);
+		UUID targetUUID = ((Player) e.getSpectatorTarget()).getUniqueId();
 
-		if (vpTarget.player.equals(((Player) e.getSpectatorTarget()).getUniqueId())) {
+		if (Bukkit.getPlayer(targetUUID) == null) {
+			return; // this should never happen in the current implementation
+		}
+
+		if (targetUUID == null || !targetUUID.equals(vpTeammate.player)) {
+			Bukkit.getLogger().log(Level.INFO,
+					"StopSpectating: Player currently not spectating the target, resetting ...");
+			game.forceSpectate(e.getPlayer(), vpTeammate);
 			return;
 		}
-		
-		game.forceSpectate(e.getPlayer(), vpTarget);
+
+		e.setCancelled(true);
 	}
 }

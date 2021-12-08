@@ -21,12 +21,14 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import net.kreaverse.ExcellentVARO;
+import net.kreaverse.listeners.GlowHandler;
 import net.kreaverse.tasks.ActionbarUpdater;
 import net.kreaverse.tasks.BorderShrinkDelay;
 import net.kreaverse.tasks.FightTracker;
 import net.kreaverse.tasks.GamePause;
 import net.kreaverse.tasks.ScoreboardUpdater;
 import net.kreaverse.tasks.StartCountdown;
+import net.kyori.adventure.text.Component;
 
 public class VaroGame {
 
@@ -67,7 +69,7 @@ public class VaroGame {
 
 	private ExcellentVARO plugin;
 	private VaroMessenger msg;
-//	public GlowHandler gh;
+	public GlowHandler gh;
 
 	private HashMap<String, BukkitRunnable> timerThreads;
 	private ScoreboardUpdater scoreboardUpdater;
@@ -88,14 +90,14 @@ public class VaroGame {
 		players = cfg.loadPlayers();
 		timerThreads = new HashMap<String, BukkitRunnable>();
 
-//		gh = new GlowHandler(this, plugin);
+		gh = new GlowHandler(this, plugin);
 
 		int savedBorderSize = plugin.getConfig().getInt("game.borderSize");
 		Bukkit.getServer().getWorlds().forEach(world -> {
 			world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
 			world.setGameRule(GameRule.PLAYERS_SLEEPING_PERCENTAGE, 50);
 			world.setGameRule(GameRule.UNIVERSAL_ANGER, false);
-			world.setGameRule(GameRule.SPECTATORS_GENERATE_CHUNKS, false);
+//			world.setGameRule(GameRule.SPECTATORS_GENERATE_CHUNKS, false);
 			world.getWorldBorder().setSize(savedBorderSize);
 		});
 
@@ -103,6 +105,22 @@ public class VaroGame {
 		(new ActionbarUpdater(this, borderWarningBlocks)).runTaskTimer(plugin, 1L, 1L);
 
 		updateState(GameState.fromInt(plugin.getConfig().getInt("game.state")));
+
+//		(new BukkitRunnable() {
+//
+//			@Override
+//			public void run() {
+//				Bukkit.getOnlinePlayers().forEach(spectator -> {
+//					VaroPlayer vpSpectator = getPlayerByUUID(spectator.getUniqueId());
+//
+//					if (vpSpectator == null || vpSpectator.alive || vpSpectator.getTeammate() == null
+//							|| Bukkit.getPlayer(vpSpectator.getTeammate()) == null)
+//						return;
+//
+//  					forceSpectate(spectator, getPlayerByUUID(vpSpectator.getTeammate()));
+//				});
+//			}
+//		}).runTaskTimer(plugin, 20L, 100L);
 	}
 
 	public void updateState(GameState newState) {
@@ -166,19 +184,6 @@ public class VaroGame {
 			VaroPlayer vp = getPlayerByUUID(p.identity().uuid());
 			if (!vp.alive) {
 				p.setGameMode(GameMode.SPECTATOR);
-
-				if (timerThreads.get("forceSpectateTimer") != null
-						&& !timerThreads.get("forceSpectateTimer").isCancelled()) {
-					timerThreads.get("forceSpectateTimer").cancel();
-				}
-
-				timerThreads.put("forceSpectateTimer", new BukkitRunnable() {
-					@Override
-					public void run() {
-						forceSpectate(p, getPlayerByUUID(vp.getTeammate()));
-					}
-				});
-				timerThreads.get("forceSpectateTimer").runTaskLater(plugin, 20L * 10);
 			} else {
 				p.setGameMode(GameMode.SURVIVAL);
 			}
@@ -322,23 +327,36 @@ public class VaroGame {
 		updatePlayer(p);
 
 		if (!vp.alive) {
+			if (vp.getTeammate() != null && getPlayerByUUID(vp.getTeammate()).alive
+					&& Bukkit.getPlayer(vp.getTeammate()) == null) {
+				p.kick(Component.text(ChatColor.RED
+						+ "Du bist tot und kannst gerade nicht zuschauen, da dein Teammate noch lebt und nicht online ist."));
+			}
+
 			msg.playerTitle(p, "Zuschauer", ChatColor.GRAY, "Das Spiel hat bereits begonnen oder du bist tot",
 					ChatColor.LIGHT_PURPLE);
 
-			if (vp.getTeammate() != null)
-				forceSpectate(p, getPlayerByUUID(vp.getTeammate()));
-		} else if (vp.getTeammate() != null && Bukkit.getPlayer(vp.getTeammate()) != null) {
-			forceSpectate(Bukkit.getPlayer(vp.getTeammate()), vp);
+			(new BukkitRunnable() {
+
+				@Override
+				public void run() {
+					forceSpectate(p, getPlayerByUUID(getPlayerByUUID(p.getUniqueId()).getTeammate()));
+				}
+			}).runTaskLater(plugin, 20L);
+
+		} else {
+			p.clearTitle();
 		}
+
 		scoreboardUpdater.run();
 		return vp;
 	}
 
 	public void updateTeamGlow(Player p1, Player p2) {
-//		if (p1 != null)
-//			gh.initiateTeamGlow(p1, p2);
-//		if (p2 != null)
-//			gh.initiateTeamGlow(p2, p1);
+		if (p1 != null && p2 != null) {
+			gh.initiateTeamGlow(p1, p2);
+			gh.initiateTeamGlow(p2, p1);
+		}
 	}
 
 	public void playerHPChange(Player p, double damage) {
@@ -408,8 +426,15 @@ public class VaroGame {
 
 		playerKill(vp);
 		updatePlayer(p);
+
 		msg.playerMessage(p, "Falls du ein Teammate hast, wirst du in 10 Sekunden zu ihm teleportiert...",
 				ChatColor.GRAY);
+		(new BukkitRunnable() {
+			@Override
+			public void run() {
+				forceSpectate(p, getPlayerByUUID(vp.getTeammate()));
+			}
+		}).runTaskLater(plugin, 20L * 10);
 
 		scoreboardUpdater.updateScoreboard(vp);
 	}
@@ -456,12 +481,13 @@ public class VaroGame {
 
 		Player teammate = Bukkit.getPlayer(vpTeammate.player);
 
-		if (teammate == null)
-			return; // Teammate is offline
+		if (teammate == null) // Teammate is offline
+			spectator.kick(Component.text(ChatColor.RED
+					+ "Du bist tot und kannst gerade nicht zuschauen, da dein Teammate noch lebt und nicht online ist."));
 
-		if (spectator.getSpectatorTarget().equals(teammate)) {
-			Bukkit.getLogger().log(Level.INFO, "Player already spectating the target, returning...");
-			return;
+		if (spectator.getSpectatorTarget() != null && spectator.getSpectatorTarget().equals(teammate)) {
+			Bukkit.getLogger().log(Level.INFO, "ForceSpectate: Player already spectating the target, returning...");
+			return; // Player already Spectating the target
 		}
 
 		msg.playerMessage(spectator, "Da dein Teammate noch lebt, kannst du nicht frei zuschauen!",

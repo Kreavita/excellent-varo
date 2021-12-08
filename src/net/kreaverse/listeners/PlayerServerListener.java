@@ -31,7 +31,6 @@ public class PlayerServerListener implements Listener {
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent e) {
 		VaroPlayer vp = game.playerJoin(e.getPlayer());
-		e.getPlayer().clearTitle();
 		e.joinMessage(e.joinMessage().append(Component.text((vp.alive) ? " (als Spieler)" : " (als Zuschauer)")));
 	}
 
@@ -48,6 +47,18 @@ public class PlayerServerListener implements Listener {
 					+ (game.aliveCount - 1) + " Spieler.", ChatColor.RED);
 			game.playerKill(p);
 		}
+
+		if (!vp.alive || vp.getTeammate() == null)
+			return;
+
+		VaroPlayer vpTeammate = game.getPlayerByUUID(vp.getTeammate());
+
+		if (vpTeammate == null || Bukkit.getPlayer(vp.getTeammate()) == null || vpTeammate.alive)
+			return;
+
+		Bukkit.getPlayer(vp.getTeammate()).kick(Component.text(ChatColor.RED
+				+ "Du bist tot und kannst nicht länger zuschauen, da dein Teammate noch lebt und den Server verlassen hat."));
+
 	}
 
 	@EventHandler
@@ -60,13 +71,14 @@ public class PlayerServerListener implements Listener {
 		Player sender = e.getPlayer();
 		VaroPlayer vpSender = game.getPlayerByUUID(sender.getUniqueId());
 
-		String message = PlainTextComponentSerializer.plainText().serialize(e.message());
-		Bukkit.getLogger().log(Level.INFO, "Spectator Message: <" + sender.getName() + ">" + message);
-
 		if (game.getState() == GameState.ONGOING && (vpSender == null || !vpSender.alive)) {
+
+			String message = PlainTextComponentSerializer.plainText().serialize(e.message());
+			Bukkit.getLogger().log(Level.INFO, "Spectator Message: <" + sender.getName() + ">" + message);
+
 			Bukkit.getOnlinePlayers().forEach(receiver -> {
 
-				VaroPlayer vpReceiver = game.getPlayerByUUID(sender.getUniqueId());
+				VaroPlayer vpReceiver = game.getPlayerByUUID(receiver.getUniqueId());
 
 				if (vpReceiver != null && vpReceiver.alive) {
 					return;
