@@ -2,8 +2,10 @@ package net.kreaverse.listeners;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -44,12 +46,15 @@ public class EntityDamageListener implements Listener {
 			return;
 		}
 
-		if (e.getDamager().getType() != EntityType.PLAYER) {
+		Entity damager = (e.getDamager() instanceof Projectile) ? (Entity) ((Projectile) e.getDamager()).getShooter()
+				: e.getDamager();
+
+		if (damager.getType() != EntityType.PLAYER) {
 			game.playerHPChange(victim, e.getFinalDamage());
 			return;
 		}
 
-		Player attacker = (Player) e.getDamager();
+		Player attacker = (Player) damager;
 		VaroPlayer vpAttacker = game.getPlayerByUUID(attacker.getUniqueId());
 
 		if (vpAttacker == null || !vpAttacker.alive) {
@@ -59,7 +64,7 @@ public class EntityDamageListener implements Listener {
 
 		game.playerHPChange(victim, e.getFinalDamage());
 
-		if (e.getFinalDamage() < victim.getHealth()) {
+		if (e.getFinalDamage() < victim.getHealth() && !vpVictim.equals(vpAttacker)) {
 			if (vpVictim.lastAttacker == null) {
 				msg.playerMessage(victim,
 						"Du befindest dich jetzt im Kampf, in den nächsten 30 Sekunden darfst du dich nicht ausloggen!",
@@ -130,8 +135,9 @@ public class EntityDamageListener implements Listener {
 			return;
 		}
 
-		if (e.getPlayer().getKiller() != null) {
-			VaroPlayer vpAttacker = game.getPlayerByUUID(vpVictim.lastAttacker);
+		VaroPlayer vpAttacker = game.getPlayerByUUID(vpVictim.lastAttacker);
+
+		if (e.getPlayer().getKiller() != null && vpAttacker != null) {
 			int killCount = (int) vpAttacker.incrementStat("kills", 1);
 			msg.broadcastKillMessage(Bukkit.getOfflinePlayer(vpAttacker.player).getName(), e.deathMessage(), killCount,
 					game.aliveCount);

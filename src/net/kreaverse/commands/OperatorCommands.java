@@ -130,6 +130,7 @@ public class OperatorCommands implements CommandExecutor {
 			msg.broadcastRevive(op.getName(), game.aliveCount);
 
 			p = Bukkit.getPlayer(args[0]);
+			
 			if (p != null) {
 				game.playerRevive(p);
 			} else {
