@@ -105,22 +105,6 @@ public class VaroGame {
 		(new ActionbarUpdater(this, borderWarningBlocks)).runTaskTimer(plugin, 1L, 1L);
 
 		updateState(GameState.fromInt(plugin.getConfig().getInt("game.state")));
-
-//		(new BukkitRunnable() {
-//
-//			@Override
-//			public void run() {
-//				Bukkit.getOnlinePlayers().forEach(spectator -> {
-//					VaroPlayer vpSpectator = getPlayerByUUID(spectator.getUniqueId());
-//
-//					if (vpSpectator == null || vpSpectator.alive || vpSpectator.getTeammate() == null
-//							|| Bukkit.getPlayer(vpSpectator.getTeammate()) == null)
-//						return;
-//
-//  					forceSpectate(spectator, getPlayerByUUID(vpSpectator.getTeammate()));
-//				});
-//			}
-//		}).runTaskTimer(plugin, 20L, 100L);
 	}
 
 	public void updateState(GameState newState) {
@@ -184,6 +168,8 @@ public class VaroGame {
 			VaroPlayer vp = getPlayerByUUID(p.identity().uuid());
 			if (!vp.alive) {
 				p.setGameMode(GameMode.SPECTATOR);
+				vp.lastAttacker = null;
+				vp.attackedCooldown = Math.min(vp.attackedCooldown, 1);
 			} else {
 				p.setGameMode(GameMode.SURVIVAL);
 			}

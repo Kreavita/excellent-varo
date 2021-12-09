@@ -10,6 +10,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 
 import net.kreaverse.model.VaroGame;
 import net.kreaverse.model.VaroGame.GameState;
@@ -44,13 +45,7 @@ public class EntityDamageListener implements Listener {
 		}
 
 		if (e.getDamager().getType() != EntityType.PLAYER) {
-			if (e.getFinalDamage() < victim.getHealth()) {
-				game.playerHPChange(victim, e.getFinalDamage());
-				return;
-			}
-			msg.broadcastDeath(victim.getName(), game.aliveCount);
-			game.playerKill(victim);
-			e.setCancelled(true);
+			game.playerHPChange(victim, e.getFinalDamage());
 			return;
 		}
 
@@ -64,16 +59,18 @@ public class EntityDamageListener implements Listener {
 
 		game.playerHPChange(victim, e.getFinalDamage());
 
-		if (vpVictim.lastAttacker == null) {
-			msg.playerMessage(victim,
-					"Du befindest dich jetzt im Kampf, in den nächsten 30 Sekunden darfst du dich nicht ausloggen!",
-					ChatColor.YELLOW);
-		}
+		if (e.getFinalDamage() < victim.getHealth()) {
+			if (vpVictim.lastAttacker == null) {
+				msg.playerMessage(victim,
+						"Du befindest dich jetzt im Kampf, in den nächsten 30 Sekunden darfst du dich nicht ausloggen!",
+						ChatColor.YELLOW);
+			}
 
-		if (vpAttacker.lastAttacker == null) {
-			msg.playerMessage(attacker,
-					"Du befindest dich jetzt im Kampf, in den nächsten 30 Sekunden darfst du dich nicht ausloggen!",
-					ChatColor.YELLOW);
+			if (vpAttacker.lastAttacker == null) {
+				msg.playerMessage(attacker,
+						"Du befindest dich jetzt im Kampf, in den nächsten 30 Sekunden darfst du dich nicht ausloggen!",
+						ChatColor.YELLOW);
+			}
 		}
 
 		vpVictim.setAttacker(vpAttacker.player);
@@ -84,21 +81,6 @@ public class EntityDamageListener implements Listener {
 
 		vpAttacker.incrementStat("damageDealtToPlayers", e.getFinalDamage());
 		vpVictim.incrementStat("damageTakenFromPlayers", e.getFinalDamage());
-
-		if (e.getFinalDamage() < victim.getHealth()) {
-			if (vpVictim.lastAttacker == null) {
-				msg.playerMessage(vpVictim.player,
-						"Du bist jetzt im Kampf, du darfst dich in den nächsten 30 Sekunden nicht ausloggen.",
-						ChatColor.RED);
-			}
-			return;
-		}
-
-		int killCount = (int) vpAttacker.incrementStat("kills", 1);
-		msg.broadcastKill(attacker.getName(), victim.getName(), killCount, game.aliveCount);
-
-		game.playerKill(victim);
-		e.setCancelled(true);
 	}
 
 	@EventHandler
@@ -123,21 +105,6 @@ public class EntityDamageListener implements Listener {
 		}
 
 		game.playerHPChange(victim, e.getFinalDamage());
-
-		if (e.getFinalDamage() < victim.getHealth())
-			return;
-
-		if (vpVictim.lastAttacker != null) {
-			VaroPlayer vpAttacker = game.getPlayerByUUID(vpVictim.lastAttacker);
-			int killCount = (int) vpAttacker.incrementStat("kills", 1);
-			msg.broadcastKill(Bukkit.getOfflinePlayer(vpAttacker.player).getName(), victim.getName(), killCount,
-					game.aliveCount);
-
-		} else
-			msg.broadcastDeath(victim.getName(), game.aliveCount);
-
-		game.playerKill(victim);
-		e.setCancelled(e.getCause() != DamageCause.VOID);
 	}
 
 	@EventHandler
@@ -148,5 +115,34 @@ public class EntityDamageListener implements Listener {
 		}
 		e.setCancelled(game.paused);
 		game.playerHPChange((Player) e.getEntity(), e.getAmount());
+	}
+
+	@EventHandler
+	public void onPlayerDeath(PlayerDeathEvent e) {
+		if (game.getState() != GameState.ONGOING) {
+			return;
+		}
+
+		Player victim = e.getEntity();
+		VaroPlayer vpVictim = game.getPlayerByUUID(victim.getUniqueId());
+
+		if (vpVictim == null || !vpVictim.alive) {
+			return;
+		}
+
+		if (e.getPlayer().getKiller() != null) {
+			VaroPlayer vpAttacker = game.getPlayerByUUID(vpVictim.lastAttacker);
+			int killCount = (int) vpAttacker.incrementStat("kills", 1);
+			msg.broadcastKillMessage(Bukkit.getOfflinePlayer(vpAttacker.player).getName(), e.deathMessage(), killCount,
+					game.aliveCount);
+		} else
+			msg.broadcastDeathMessage(e.deathMessage(), game.aliveCount);
+
+		game.playerKill(victim);
+
+		e.getDrops().clear();
+		e.setDroppedExp(0);
+		e.setCancelled(
+				victim.getLastDamageCause() == null || victim.getLastDamageCause().getCause() != DamageCause.VOID);
 	}
 }

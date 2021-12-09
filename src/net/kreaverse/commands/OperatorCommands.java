@@ -16,6 +16,7 @@ import net.kreaverse.model.VaroGame;
 import net.kreaverse.model.VaroGame.GameState;
 import net.kreaverse.model.VaroMessenger;
 import net.kreaverse.model.VaroPlayer;
+import net.kyori.adventure.text.Component;
 
 public class OperatorCommands implements CommandExecutor {
 	private VaroGame game;
@@ -43,8 +44,8 @@ public class OperatorCommands implements CommandExecutor {
 
 		switch (command.getName()) {
 		case "start":
-			if (game.getState() == GameState.ONGOING) {
-				msg.errorMessage(sender, "Das Spiel läuft bereits.");
+			if (game.getState() != GameState.IDLE) {
+				msg.errorMessage(sender, "Das Spiel wurde bereits gestartet.");
 				return true;
 			}
 			counter = 61;
@@ -84,13 +85,14 @@ public class OperatorCommands implements CommandExecutor {
 				msg.errorMessage(sender, "Dieser Spieler existiert nicht.");
 				return true;
 			}
-			
+
 			if (!vp.alive) {
 				msg.errorMessage(sender, "Dieser Spieler ist bereits tot.");
 				return true;
 			}
 
-			msg.broadcastDeath(op.getName(), game.aliveCount);
+			msg.successMessage(sender, op.getName() + " wurde getötet.");
+			msg.broadcastDeathMessage(Component.text(op.getName() + " ist gestorben"), game.aliveCount);
 
 			p = Bukkit.getPlayer(args[0]);
 			if (p != null) {
@@ -98,7 +100,7 @@ public class OperatorCommands implements CommandExecutor {
 			} else {
 				game.playerKill(vp);
 			}
-			msg.successMessage(sender, op.getName() + " wurde getötet.");
+			
 			return true;
 
 		case "varorevive":
@@ -118,12 +120,13 @@ public class OperatorCommands implements CommandExecutor {
 				msg.errorMessage(sender, "Dieser Spieler existiert nicht.");
 				return true;
 			}
-			
+
 			if (vp.alive) {
 				msg.errorMessage(sender, "Dieser Spieler ist bereits am Leben.");
 				return true;
 			}
 
+			msg.successMessage(sender, op.getName() + " wurde wiederbelebt.");
 			msg.broadcastRevive(op.getName(), game.aliveCount);
 
 			p = Bukkit.getPlayer(args[0]);
@@ -132,8 +135,7 @@ public class OperatorCommands implements CommandExecutor {
 			} else {
 				game.playerRevive(vp);
 			}
-
-			msg.successMessage(sender, op.getName() + " wurde wiederbelebt.");
+			
 			return true;
 
 		case "saveconfig":

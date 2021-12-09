@@ -92,7 +92,7 @@ public class PlayerServerListener implements Listener {
 		msg.chatMessage(sender, e.message());
 	}
 
-	private String[] pmPrefixes = { "/msg ", "/tell ", "/r ", "/whisper ", "/w ", "/me " };
+	private String[] pmPrefixes = { "/msg ", "/tell ", "/r ", "/whisper ", "/w ", "/me ", "/say " };
 
 	@EventHandler
 	public void onPlayerCommand(PlayerCommandPreprocessEvent e) {

@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import net.kyori.adventure.title.Title.Times;
 
@@ -40,8 +41,8 @@ public class VaroMessenger {
 	}
 
 	public void chatMessage(Player sender, Component msg) {
-		Bukkit.broadcast(Component.text(formattedTime() + ChatColor.GREEN + "SPIELER " + ChatColor.GOLD + sender.getName()
-				+ ChatColor.DARK_GRAY + " >> " + ChatColor.WHITE).append(msg));
+		Bukkit.broadcast(Component.text(formattedTime() + ChatColor.GREEN + "SPIELER " + ChatColor.GOLD
+				+ sender.getName() + ChatColor.DARK_GRAY + " >> " + ChatColor.WHITE).append(msg));
 	}
 
 	public void spectatorMessage(Player sender, Player otherSpectator, Component msg) {
@@ -82,12 +83,21 @@ public class VaroMessenger {
 		Bukkit.broadcast(Component.text(formattedPrefix() + color + msg));
 	}
 
-	public void broadcastDeath(String victim, long aliveCount) {
+	public void broadcastDeathMessage(Component message, long aliveCount) {
 		Bukkit.getOnlinePlayers()
 				.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1));
 
-		Bukkit.broadcast(Component.text(formattedPrefix() + ChatColor.RED + victim + " ist gestorben. Es leben noch "
-				+ (aliveCount - 1) + " Spieler."));
+		Bukkit.broadcast(Component.text(formattedPrefix()).append(message.color(NamedTextColor.RED))
+				.append(Component.text(". Es leben noch " + (aliveCount - 1) + " Spieler.").color(NamedTextColor.RED)));
+	}
+
+	public void broadcastKillMessage(String attacker, Component message, long killCount, long aliveCount) {
+		Bukkit.getOnlinePlayers()
+				.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1));
+
+		Bukkit.broadcast(Component.text(formattedPrefix()).append(message.color(NamedTextColor.RED))
+				.append(Component.text(". (" + killCount + ". Kill) Es leben noch " + (aliveCount - 1) + " Spieler.")
+						.color(NamedTextColor.RED)));
 	}
 
 	public void broadcastRevive(String victim, long aliveCount) {
@@ -96,14 +106,6 @@ public class VaroMessenger {
 
 		Bukkit.broadcast(Component.text(formattedPrefix() + ChatColor.LIGHT_PURPLE + victim
 				+ " wude wiederbelebt. Es leben jetzt wieder " + (aliveCount + 1) + " Spieler."));
-	}
-
-	public void broadcastKill(String attacker, String victim, long killCount, long aliveCount) {
-		Bukkit.getOnlinePlayers()
-				.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1));
-
-		Bukkit.broadcast(Component.text(formattedPrefix() + ChatColor.RED + victim + " wurde von " + attacker
-				+ " getötet. (" + killCount + ". Kill) Es leben noch " + (aliveCount - 1) + " Spieler."));
 	}
 
 	public void errorMessage(@NotNull CommandSender sender, String errorMessage) {

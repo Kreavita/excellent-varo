@@ -24,7 +24,6 @@ public class ScoreboardUpdater extends BukkitRunnable {
 	@Override
 	public void run() {
 		game.players.stream().filter(vp -> Bukkit.getPlayer(vp.player) != null).forEach(vp -> updateScoreboard(vp));
-//		Bukkit.getOnlinePlayers().forEach(p ->game.pl.sendUpdatePackets(p));
 	}
 
 	public void updateScoreboard(@NotNull VaroPlayer vp) {
@@ -59,7 +58,7 @@ public class ScoreboardUpdater extends BukkitRunnable {
 		String stateStr;
 		switch (game.getState()) {
 		case FINISHED:
-			stateStr = "§2§Beendet";
+			stateStr = "§2§lBeendet";
 			break;
 		case ONGOING:
 			stateStr = "§c§lSPIEL LÄUFT";
