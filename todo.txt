@@ -13,6 +13,7 @@ DONE border-delay: announcement, config, implementation, pausable
 DONE fancy chat nachrichten, whisper commands für spectators blocken
 DONE teamglow fix testen
 DONE spectator mode fixen wenn spectated teammate stirbt/revived wird (wenn tm leaved oder nicht online => kick)
+DONE Team Glow Fixen => Minecraft 1.18 Suckt noch => Fixed, lag daran dass die Packets Shared Instances sind
 
 TESTING spectator mode: wenn der alive teammate stirbt -> leaven
 
@@ -23,4 +24,3 @@ Eher nicht:
 Replay Mod? Eher nicht
 Anticheat? Eher nicht
 map regeneration? Eher nicht
-Team Glow Fixen => Minecraft 1.18 Suckt noch

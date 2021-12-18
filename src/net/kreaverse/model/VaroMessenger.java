@@ -105,7 +105,7 @@ public class VaroMessenger {
 				.forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1));
 
 		Bukkit.broadcast(Component.text(formattedPrefix() + ChatColor.LIGHT_PURPLE + victim
-				+ " wude wiederbelebt. Es leben jetzt wieder " + (aliveCount + 1) + " Spieler."));
+				+ " wurde wiederbelebt. Es leben jetzt wieder " + (aliveCount + 1) + " Spieler."));
 	}
 
 	public void errorMessage(@NotNull CommandSender sender, String errorMessage) {

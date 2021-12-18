@@ -4,6 +4,7 @@ version: 1.0
 description: An Excellent VARO Plugin for Excellent Students
 main: net.kreaverse.ExcellentVARO
 api-version: 1.18
+depend: [ProtocolLib]
 commands:
  team:
   aliases: [friend, teamrequest, teamaccept]

@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -26,25 +27,32 @@ public class PlayerCraftListener implements Listener {
 
 	private ShapelessRecipe goldAppleRevive;
 	private ShapelessRecipe witherSkullRevive;
+	private ShapedRecipe opApple;
 
 	public PlayerCraftListener(VaroGame game, VaroMessenger msg, ExcellentVARO plugin) {
 		this.game = game;
 		this.msg = msg;
 
-		ItemStack item = new ItemStack(Material.DRAGON_EGG);
-		ItemMeta meta = item.getItemMeta();
+		ItemStack egg = new ItemStack(Material.DRAGON_EGG);
+		ItemMeta eggMeta = egg.getItemMeta();
 
-		meta.displayName(Component.text(ChatColor.GOLD + "Teammate Wiederbeleben"));
-		item.addUnsafeEnchantment(Enchantment.MENDING, 10);
-		item.setItemMeta(meta);
+		eggMeta.displayName(Component.text(ChatColor.GOLD + "Teammate Wiederbeleben"));
+		egg.addUnsafeEnchantment(Enchantment.MENDING, 10);
+		egg.setItemMeta(eggMeta);
 
-		goldAppleRevive = new ShapelessRecipe(new NamespacedKey(plugin, "goldAppleRevive"), item);
+		goldAppleRevive = new ShapelessRecipe(new NamespacedKey(plugin, "goldAppleRevive"), egg);
 		goldAppleRevive.addIngredient(Material.ENCHANTED_GOLDEN_APPLE);
 		plugin.getServer().addRecipe(goldAppleRevive);
 
-		witherSkullRevive = new ShapelessRecipe(new NamespacedKey(plugin, "witherSkullRevive"), item);
+		witherSkullRevive = new ShapelessRecipe(new NamespacedKey(plugin, "witherSkullRevive"), egg);
 		witherSkullRevive.addIngredient(Material.WITHER_SKELETON_SKULL);
 		plugin.getServer().addRecipe(witherSkullRevive);
+		
+		opApple = new ShapedRecipe(new NamespacedKey(plugin, "enchantedGoldenApple"), new ItemStack(Material.ENCHANTED_GOLDEN_APPLE));
+		opApple.shape("***","*o*","***");
+		opApple.setIngredient('*', new ItemStack(Material.GOLD_BLOCK));
+		opApple.setIngredient('o', new ItemStack(Material.APPLE));
+		plugin.getServer().addRecipe(opApple);
 
 	}
 
