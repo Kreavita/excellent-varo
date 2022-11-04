@@ -1,4 +1,4 @@
 # excellent-varo
-Ein Varo Plugin das dem Exzellenzstatus der Technischen Universität Dresden gerecht wird :)
+Ein Varo Plugin dem Exzellenzstatus verliehen werden sollte :)
 
 Kompatibel mit PaperMC 1.18
